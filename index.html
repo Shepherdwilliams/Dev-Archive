@@ -1,0 +1,79 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Development Archive</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              'brand-black': '#212529',
+              'brand-gray-dark': '#495057',
+              'brand-green': '#8AC926',
+              'brand-green-dark': '#73A820',
+              'brand-red': '#E63946',
+              'brand-off-white': '#F8F9FA',
+              'brand-light-gray': '#CED4DA',
+              'brand-border': '#343A40',
+            },
+            backdropBlur: {
+              'xs': '2px',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: -1;
+        background-image: radial-gradient(rgba(138, 201, 38, 0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
+        animation: moveGrid 30s linear infinite;
+      }
+
+      @keyframes moveGrid {
+        from {
+          background-position: 0 0;
+        }
+        to {
+          background-position: -200px -200px;
+        }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+  }
+}
+</script>
+</head>
+  <body class="bg-brand-black text-brand-off-white">
+    <div id="root"></div>
+  </body>
+</html>
