@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
+import type { Models } from 'appwrite';
+import { account, databases, APPWRITE_CONFIG } from './lib/appwrite';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { CurriculumGrid } from './components/CurriculumGrid';
@@ -14,54 +16,79 @@ import { courseModules } from './constants';
 
 export type View = 'home' | 'modules' | 'lesson' | 'quiz' | 'glossary';
 
-// Helper functions for localStorage
-const getProgressForUser = (email: string): Set<string> => {
-  const allProgress = JSON.parse(localStorage.getItem('dev-archive-progress') || '{}');
-  return new Set(allProgress[email] || []);
-};
-
-const saveProgressForUser = (email: string, progress: Set<string>) => {
-  const allProgress = JSON.parse(localStorage.getItem('dev-archive-progress') || '{}');
-  allProgress[email] = Array.from(progress);
-  localStorage.setItem('dev-archive-progress', JSON.stringify(allProgress));
-};
-
-
 const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<Models.User<Models.Preferences> | null>(null);
   const [view, setView] = useState<View>('home');
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
 
   // Check for active session on initial load
   useEffect(() => {
-    const loggedInUser = sessionStorage.getItem('dev-archive-user');
-    if (loggedInUser) {
-      setCurrentUser(loggedInUser);
-      setCompletedLessons(getProgressForUser(loggedInUser));
-    }
+    const checkSession = async () => {
+      try {
+        const user = await account.get();
+        setCurrentUser(user);
+        await fetchProgress(user.$id);
+      } catch (error) {
+        // Not logged in
+        console.log('No active session found.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkSession();
   }, []);
 
   // Save progress whenever it changes for the current user
   useEffect(() => {
-    if (currentUser) {
-      saveProgressForUser(currentUser, completedLessons);
-    }
+    const saveProgress = async () => {
+        if (currentUser && completedLessons.size > 0) {
+            try {
+                await databases.updateDocument(
+                    APPWRITE_CONFIG.databaseId,
+                    APPWRITE_CONFIG.userProgressCollectionId,
+                    currentUser.$id,
+                    { completedLessons: Array.from(completedLessons) }
+                );
+            } catch (error) {
+                console.error('Failed to save progress:', error);
+            }
+        }
+    };
+    saveProgress();
   }, [completedLessons, currentUser]);
 
-
-  const handleLoginSuccess = (email: string) => {
-    setCurrentUser(email);
-    sessionStorage.setItem('dev-archive-user', email);
-    setCompletedLessons(getProgressForUser(email));
+  const fetchProgress = async (userId: string) => {
+    try {
+      const document = await databases.getDocument(
+        APPWRITE_CONFIG.databaseId,
+        APPWRITE_CONFIG.userProgressCollectionId,
+        userId
+      );
+      setCompletedLessons(new Set(document.completedLessons || []));
+    } catch (error) {
+      console.error('Could not fetch user progress:', error);
+      // It might be a new user, so an empty set is fine.
+      setCompletedLessons(new Set());
+    }
+  };
+  
+  const handleLoginSuccess = async (user: Models.User<Models.Preferences>) => {
+    setCurrentUser(user);
+    await fetchProgress(user.$id);
     setView('home'); // Go to home after login
   };
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    sessionStorage.removeItem('dev-archive-user');
-    setCompletedLessons(new Set());
-    setView('home');
+  const handleLogout = async () => {
+    try {
+      await account.deleteSession('current');
+      setCurrentUser(null);
+      setCompletedLessons(new Set());
+      setView('home');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   const handleSelectLesson = (lesson: Lesson) => {
@@ -75,15 +102,13 @@ const App: React.FC = () => {
   };
 
   const totalLessons = courseModules.reduce((acc, module) => acc + module.lessons.length, 0);
-  const progress = (completedLessons.size / totalLessons) * 100;
-
+  const progress = totalLessons > 0 ? (completedLessons.size / totalLessons) * 100 : 0;
 
   useEffect(() => {
     if (currentUser) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [view, activeLesson, currentUser]);
-
 
   const renderContent = () => {
     switch (view) {
@@ -105,6 +130,14 @@ const App: React.FC = () => {
         );
     }
   };
+
+  if (isLoading) {
+    return (
+        <div className="min-h-screen flex items-center justify-center">
+            <p className="text-xl text-brand-green">Loading...</p>
+        </div>
+    );
+  }
 
   if (!currentUser) {
     return (

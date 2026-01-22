@@ -1,11 +1,12 @@
 
 import React from 'react';
+import type { Models } from 'appwrite';
 import type { View } from '../App';
 
 interface HeaderProps {
   setView: (view: View) => void;
   currentView: View;
-  currentUser: string | null;
+  currentUser: Models.User<Models.Preferences> | null;
   onLogout: () => void;
 }
 
@@ -48,7 +49,7 @@ export const Header: React.FC<HeaderProps> = ({ setView, currentView, currentUse
               <NavLink view="glossary" currentView={currentView} setView={setView}>Glossary</NavLink>
             </div>
              <div className="hidden md:flex items-center space-x-4">
-                <span className="text-sm text-brand-light-gray">Welcome, {currentUser}</span>
+                <span className="text-sm text-brand-light-gray">Welcome, {currentUser?.email}</span>
                 <button 
                     onClick={onLogout}
                     className="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 bg-brand-red/80 text-white hover:bg-brand-red"
