@@ -47,6 +47,7 @@ export const Header: React.FC<HeaderProps> = ({ setView, currentView, currentUse
               <NavLink view="modules" currentView={currentView} setView={setView}>Modules</NavLink>
               <NavLink view="quiz" currentView={currentView} setView={setView}>Quiz</NavLink>
               <NavLink view="glossary" currentView={currentView} setView={setView}>Glossary</NavLink>
+              <NavLink view="chat" currentView={currentView} setView={setView}>AI Chat</NavLink>
             </div>
              <div className="hidden md:flex items-center space-x-4">
                 <span className="text-sm text-brand-light-gray">Welcome, {currentUser?.email}</span>

@@ -9,13 +9,14 @@ import { CourseModules } from './components/CourseModules';
 import { LessonView } from './components/LessonView';
 import { Quiz } from './components/Quiz';
 import { Glossary } from './components/Glossary';
+import { Chat } from './components/Chat';
 import { Footer } from './components/Footer';
 import { Auth } from './components/Auth';
 import { SupabaseSetupGuide } from './components/SetupGuide';
 import type { Lesson, CourseModule } from './types';
 import { courseModules } from './constants';
 
-export type View = 'home' | 'modules' | 'lesson' | 'quiz' | 'glossary';
+export type View = 'home' | 'modules' | 'lesson' | 'quiz' | 'glossary' | 'chat';
 
 const App: React.FC = () => {
   if (!isSupabaseConfigured) {
@@ -131,6 +132,8 @@ const App: React.FC = () => {
         return <Quiz />;
       case 'glossary':
         return <Glossary />;
+      case 'chat':
+        return <Chat />;
       case 'home':
       default:
         return (

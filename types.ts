@@ -23,3 +23,8 @@ export interface GlossaryTerm {
   term: string;
   definition: string;
 }
+
+export interface ChatMessage {
+  role: 'user' | 'model';
+  text: string;
+}
