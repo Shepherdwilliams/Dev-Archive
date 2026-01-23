@@ -1,24 +1,20 @@
 
-import { Client, Account, Databases, ID, Permission, Role } from 'appwrite';
+import { createClient } from '@supabase/supabase-js';
 
 // --- IMPORTANT ---
-// 1. Paste your Project ID and API Endpoint from your Appwrite project dashboard.
-// 2. Paste your Database ID and Collection ID from your Appwrite database settings.
-export const APPWRITE_CONFIG = {
-    endpoint: 'PASTE_YOUR_API_ENDPOINT_HERE', // e.g., 'https://cloud.appwrite.io/v1'
-    projectId: 'PASTE_YOUR_PROJECT_ID_HERE',
-    databaseId: 'PASTE_YOUR_DATABASE_ID_HERE', // e.g., 'dev-archive-db'
-    userProgressCollectionId: 'PASTE_YOUR_COLLECTION_ID_HERE' // e.g., 'user-progress'
+// Paste your Project URL and Anon Public Key from your Supabase project settings.
+const SUPABASE_CONFIG = {
+    url: 'https://immmelhwandfkablhmwq.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltbW1lbGh3YW5kZmthYmxobXdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMDMxODQsImV4cCI6MjA4NDY3OTE4NH0.n7R9SCGGRpiWjuJjK0knl2F2iryyCi65VyEfOBle-6I'
 };
 
-const client = new Client();
+export const isSupabaseConfigured =
+    SUPABASE_CONFIG.url !== 'PASTE_YOUR_PROJECT_URL_HERE' &&
+    SUPABASE_CONFIG.anonKey !== 'PASTE_YOUR_ANON_PUBLIC_KEY_HERE' &&
+    SUPABASE_CONFIG.anonKey !== 'SUPABASE_CLIENT_API_KEY';
 
-client
-    .setEndpoint(APPWRITE_CONFIG.endpoint)
-    .setProject(APPWRITE_CONFIG.projectId);
+const supabase = isSupabaseConfigured 
+    ? createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey)
+    : {} as any; // Provide a dummy client if not configured
 
-export const account = new Account(client);
-export const databases = new Databases(client);
-
-// Export ID, Permission, and Role for easy access
-export { ID, Permission, Role };
+export { supabase };

@@ -1,12 +1,12 @@
 
 import React from 'react';
-import type { Models } from 'appwrite';
+import type { User } from '@supabase/supabase-js';
 import type { View } from '../App';
 
 interface HeaderProps {
   setView: (view: View) => void;
   currentView: View;
-  currentUser: Models.User<Models.Preferences> | null;
+  currentUser: User | null;
   onLogout: () => void;
 }
 

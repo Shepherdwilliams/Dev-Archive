@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import type { Models } from 'appwrite';
-import { account, databases, APPWRITE_CONFIG } from './lib/appwrite';
+import type { User } from '@supabase/supabase-js';
+import { supabase, isSupabaseConfigured } from './lib/appwrite';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { CurriculumGrid } from './components/CurriculumGrid';
@@ -11,84 +11,95 @@ import { Quiz } from './components/Quiz';
 import { Glossary } from './components/Glossary';
 import { Footer } from './components/Footer';
 import { Auth } from './components/Auth';
+import { SupabaseSetupGuide } from './components/SetupGuide';
 import type { Lesson, CourseModule } from './types';
 import { courseModules } from './constants';
 
 export type View = 'home' | 'modules' | 'lesson' | 'quiz' | 'glossary';
 
 const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<Models.User<Models.Preferences> | null>(null);
+  if (!isSupabaseConfigured) {
+    return <SupabaseSetupGuide />;
+  }
+
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [view, setView] = useState<View>('home');
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for active session on initial load
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const user = await account.get();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        const user = session?.user ?? null;
         setCurrentUser(user);
-        await fetchProgress(user.$id);
-      } catch (error) {
-        // Not logged in
-        console.log('No active session found.');
-      } finally {
+
+        if (event === 'SIGNED_IN') {
+          await fetchProgress(user.id);
+        }
+        
+        if (event === 'SIGNED_OUT') {
+            setCompletedLessons(new Set());
+        }
+
         setIsLoading(false);
       }
+    );
+
+    // Initial session check
+    const checkInitialSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            setCurrentUser(session.user);
+            await fetchProgress(session.user.id);
+        }
+        setIsLoading(false);
     };
-    checkSession();
+    checkInitialSession();
+
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
 
-  // Save progress whenever it changes for the current user
   useEffect(() => {
     const saveProgress = async () => {
-        if (currentUser && completedLessons.size > 0) {
-            try {
-                await databases.updateDocument(
-                    APPWRITE_CONFIG.databaseId,
-                    APPWRITE_CONFIG.userProgressCollectionId,
-                    currentUser.$id,
-                    { completedLessons: Array.from(completedLessons) }
-                );
-            } catch (error) {
-                console.error('Failed to save progress:', error);
-            }
+      if (currentUser && completedLessons.size > 0) {
+        const { error } = await supabase.from('user_progress').upsert({
+          user_id: currentUser.id,
+          completed_lessons: Array.from(completedLessons),
+        });
+        if (error) {
+          console.error('Failed to save progress:', error);
         }
+      }
     };
-    saveProgress();
+    // Only save progress if there is a user
+    if (currentUser) {
+        saveProgress();
+    }
   }, [completedLessons, currentUser]);
 
   const fetchProgress = async (userId: string) => {
-    try {
-      const document = await databases.getDocument(
-        APPWRITE_CONFIG.databaseId,
-        APPWRITE_CONFIG.userProgressCollectionId,
-        userId
-      );
-      setCompletedLessons(new Set(document.completedLessons || []));
-    } catch (error) {
+    const { data, error } = await supabase
+      .from('user_progress')
+      .select('completed_lessons')
+      .eq('user_id', userId)
+      .single();
+      
+    if (data && data.completed_lessons) {
+      setCompletedLessons(new Set(data.completed_lessons));
+    } else if (error && error.code !== 'PGRST116') { // Ignore 'range not found' for new users
       console.error('Could not fetch user progress:', error);
-      // It might be a new user, so an empty set is fine.
+      setCompletedLessons(new Set());
+    } else {
       setCompletedLessons(new Set());
     }
   };
   
-  const handleLoginSuccess = async (user: Models.User<Models.Preferences>) => {
-    setCurrentUser(user);
-    await fetchProgress(user.$id);
-    setView('home'); // Go to home after login
-  };
-
   const handleLogout = async () => {
-    try {
-      await account.deleteSession('current');
-      setCurrentUser(null);
-      setCompletedLessons(new Set());
-      setView('home');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+    await supabase.auth.signOut();
+    setView('home');
   };
 
   const handleSelectLesson = (lesson: Lesson) => {
@@ -142,7 +153,7 @@ const App: React.FC = () => {
   if (!currentUser) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center font-sans p-4">
-        <Auth onLoginSuccess={handleLoginSuccess} />
+        <Auth />
       </div>
     );
   }

@@ -1,80 +1,50 @@
 
 import React, { useState } from 'react';
-import { account, databases, ID, APPWRITE_CONFIG, Permission, Role } from '../lib/appwrite';
-import type { Models } from 'appwrite';
+import { supabase } from '../lib/appwrite';
 
-
-interface AuthProps {
-  onLoginSuccess: (user: Models.User<Models.Preferences>) => void;
-}
-
-export const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
+export const Auth: React.FC = () => {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const toggleMode = () => {
     setIsLoginMode(!isLoginMode);
     setError('');
+    setMessage('');
     setEmail('');
     setPassword('');
     setConfirmPassword('');
   };
 
-  const createInitialProgressDocument = async (userId: string) => {
-    try {
-        await databases.createDocument(
-            APPWRITE_CONFIG.databaseId,
-            APPWRITE_CONFIG.userProgressCollectionId,
-            userId,
-            {
-                userId: userId,
-                completedLessons: [],
-            },
-            [
-                Permission.read(Role.user(userId)),
-                Permission.update(Role.user(userId)),
-                Permission.delete(Role.user(userId)),
-            ]
-        );
-    } catch (err) {
-        console.error("Failed to create user progress document:", err);
-        setError("Failed to initialize user profile. Please try logging in again.");
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setMessage('');
     setIsLoading(true);
 
     if (!isLoginMode && password !== confirmPassword) {
-        setError('Passwords do not match.');
-        setIsLoading(false);
-        return;
+      setError('Passwords do not match.');
+      setIsLoading(false);
+      return;
     }
     
     try {
-        if (isLoginMode) {
-            // Login Logic
-            await account.createEmailPasswordSession(email, password);
-        } else {
-            // Sign Up Logic
-            const newUser = await account.create(ID.unique(), email, password);
-            await account.createEmailPasswordSession(email, password);
-            await createInitialProgressDocument(newUser.$id);
-        }
-        
-        const user = await account.get();
-        onLoginSuccess(user);
-
+      if (isLoginMode) {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        setMessage('Sign up successful! Please check your email to confirm your account.');
+      }
     } catch (err: any) {
-        setError(err.message || 'An unexpected error occurred.');
+      setError(err.message || 'An unexpected error occurred.');
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -125,6 +95,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
         )}
         
         {error && <p className="text-sm text-brand-red text-center">{error}</p>}
+        {message && <p className="text-sm text-brand-green text-center">{message}</p>}
 
         <div>
           <button
