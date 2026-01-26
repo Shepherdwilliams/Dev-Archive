@@ -39,10 +39,16 @@ export const Auth: React.FC = () => {
       } else {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        setMessage('Sign up successful! Please check your email to confirm your account.');
+        setMessage('Sign up successful! Please check your email to confirm your account. (Note: New Supabase projects may use a mock email server; you might need to disable email confirmation in your Supabase project settings if you don\'t receive an email.)');
       }
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred.');
+      let errorMessage = err.message || 'An unexpected error occurred.';
+      if (errorMessage.toLowerCase().includes('email not confirmed')) {
+          errorMessage = 'Your email has not been confirmed. Please check your inbox for a confirmation link. The project owner may need to configure a real email provider in Supabase for emails to be sent.';
+      } else if (errorMessage.toLowerCase().includes('invalid login credentials')) {
+          errorMessage = 'Incorrect email or password. Please try again.';
+      }
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
