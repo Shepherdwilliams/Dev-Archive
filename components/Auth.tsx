@@ -47,6 +47,8 @@ export const Auth: React.FC = () => {
           errorMessage = 'Your email has not been confirmed. Please check your inbox for a confirmation link. The project owner may need to configure a real email provider in Supabase for emails to be sent.';
       } else if (errorMessage.toLowerCase().includes('invalid login credentials')) {
           errorMessage = 'Incorrect email or password. Please try again.';
+      } else if (errorMessage.toLowerCase().includes('failed to fetch')) {
+          errorMessage = 'Could not connect to the authentication server. Please check the Supabase URL in the configuration file (lib/appwrite.ts) and ensure it is correct.';
       }
       setError(errorMessage);
     } finally {
