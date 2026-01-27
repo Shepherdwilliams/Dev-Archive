@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { supabase } from '../lib/appwrite';
+import { supabase } from '../lib/supabase';
 
 export const Auth: React.FC = () => {
   const [isLoginMode, setIsLoginMode] = useState(true);
@@ -48,7 +48,7 @@ export const Auth: React.FC = () => {
       } else if (errorMessage.toLowerCase().includes('invalid login credentials')) {
           errorMessage = 'Incorrect email or password. Please try again.';
       } else if (errorMessage.toLowerCase().includes('failed to fetch')) {
-          errorMessage = 'Could not connect to the authentication server. Please check the Supabase URL in the configuration file (lib/appwrite.ts) and ensure it is correct.';
+          errorMessage = 'Could not connect to the authentication server. Please check the Supabase URL in the configuration file (lib/supabase.ts) and ensure it is correct.';
       }
       setError(errorMessage);
     } finally {

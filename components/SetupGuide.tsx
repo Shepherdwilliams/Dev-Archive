@@ -57,7 +57,7 @@ export const SupabaseSetupGuide: React.FC = () => {
                         <br/>
                         Open the following file in your project:
                         <code className="block text-center bg-brand-black border border-brand-border rounded-md px-4 py-2 mt-2 font-mono text-brand-green">
-                            lib/appwrite.ts
+                            lib/supabase.ts
                         </code>
                     </p>
                     <p>

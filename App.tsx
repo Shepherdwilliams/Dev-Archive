@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured } from './lib/appwrite';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { CurriculumGrid } from './components/CurriculumGrid';
