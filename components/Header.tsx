@@ -1,13 +1,10 @@
 
 import React from 'react';
-import type { User } from '@supabase/supabase-js';
 import type { View } from '../App';
 
 interface HeaderProps {
   setView: (view: View) => void;
   currentView: View;
-  currentUser: User | null;
-  onLogout: () => void;
 }
 
 const NavLink: React.FC<{
@@ -31,7 +28,7 @@ const NavLink: React.FC<{
   );
 };
 
-export const Header: React.FC<HeaderProps> = ({ setView, currentView, currentUser, onLogout }) => {
+export const Header: React.FC<HeaderProps> = ({ setView, currentView }) => {
   return (
     <header className="sticky top-0 z-50">
       <nav className="border-b border-brand-border/50 bg-brand-black/70 backdrop-blur-md">
@@ -48,15 +45,6 @@ export const Header: React.FC<HeaderProps> = ({ setView, currentView, currentUse
               <NavLink view="quiz" currentView={currentView} setView={setView}>Quiz</NavLink>
               <NavLink view="glossary" currentView={currentView} setView={setView}>Glossary</NavLink>
               <NavLink view="chat" currentView={currentView} setView={setView}>AI Chat</NavLink>
-            </div>
-             <div className="hidden md:flex items-center space-x-4">
-                <span className="text-sm text-brand-light-gray">Welcome, {currentUser?.email}</span>
-                <button 
-                    onClick={onLogout}
-                    className="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 bg-brand-red/80 text-white hover:bg-brand-red"
-                >
-                    Logout
-                </button>
             </div>
             <div className="md:hidden">
               {/* Mobile menu could be adapted here */}

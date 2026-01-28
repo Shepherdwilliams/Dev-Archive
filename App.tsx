@@ -1,7 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import type { User } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { CurriculumGrid } from './components/CurriculumGrid';
@@ -11,97 +9,37 @@ import { Quiz } from './components/Quiz';
 import { Glossary } from './components/Glossary';
 import { Chat } from './components/Chat';
 import { Footer } from './components/Footer';
-import { Auth } from './components/Auth';
-import { SupabaseSetupGuide } from './components/SetupGuide';
 import type { Lesson, CourseModule } from './types';
 import { courseModules } from './constants';
 
 export type View = 'home' | 'modules' | 'lesson' | 'quiz' | 'glossary' | 'chat';
 
 const App: React.FC = () => {
-  if (!isSupabaseConfigured) {
-    return <SupabaseSetupGuide />;
-  }
-
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [view, setView] = useState<View>('home');
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
-  const [isLoading, setIsLoading] = useState(true);
 
+  // Load progress from localStorage on initial render
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        const user = session?.user ?? null;
-        setCurrentUser(user);
-
-        if (event === 'SIGNED_IN') {
-          await fetchProgress(user.id);
-        }
-        
-        if (event === 'SIGNED_OUT') {
-            setCompletedLessons(new Set());
-        }
-
-        setIsLoading(false);
+    try {
+      const storedProgress = localStorage.getItem('devArchiveProgress');
+      if (storedProgress) {
+        setCompletedLessons(new Set(JSON.parse(storedProgress)));
       }
-    );
-
-    // Initial session check
-    const checkInitialSession = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            setCurrentUser(session.user);
-            await fetchProgress(session.user.id);
-        }
-        setIsLoading(false);
-    };
-    checkInitialSession();
-
-    return () => {
-      subscription?.unsubscribe();
-    };
+    } catch (error) {
+      console.error("Failed to load progress from localStorage", error);
+      setCompletedLessons(new Set());
+    }
   }, []);
 
+  // Save progress to localStorage whenever it changes
   useEffect(() => {
-    const saveProgress = async () => {
-      if (currentUser && completedLessons.size > 0) {
-        const { error } = await supabase.from('user_progress').upsert({
-          user_id: currentUser.id,
-          completed_lessons: Array.from(completedLessons),
-        });
-        if (error) {
-          console.error('Failed to save progress:', error);
-        }
-      }
-    };
-    // Only save progress if there is a user
-    if (currentUser) {
-        saveProgress();
+    try {
+      localStorage.setItem('devArchiveProgress', JSON.stringify(Array.from(completedLessons)));
+    } catch (error) {
+      console.error("Failed to save progress to localStorage", error);
     }
-  }, [completedLessons, currentUser]);
-
-  const fetchProgress = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('user_progress')
-      .select('completed_lessons')
-      .eq('user_id', userId)
-      .single();
-      
-    if (data && data.completed_lessons) {
-      setCompletedLessons(new Set(data.completed_lessons));
-    } else if (error && error.code !== 'PGRST116') { // Ignore 'range not found' for new users
-      console.error('Could not fetch user progress:', error);
-      setCompletedLessons(new Set());
-    } else {
-      setCompletedLessons(new Set());
-    }
-  };
-  
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setView('home');
-  };
+  }, [completedLessons]);
 
   const handleSelectLesson = (lesson: Lesson) => {
     setActiveLesson(lesson);
@@ -117,10 +55,8 @@ const App: React.FC = () => {
   const progress = totalLessons > 0 ? (completedLessons.size / totalLessons) * 100 : 0;
 
   useEffect(() => {
-    if (currentUser) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [view, activeLesson, currentUser]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [view, activeLesson]);
 
   const renderContent = () => {
     switch (view) {
@@ -145,25 +81,9 @@ const App: React.FC = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-        <div className="min-h-screen flex items-center justify-center">
-            <p className="text-xl text-brand-green">Loading...</p>
-        </div>
-    );
-  }
-
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center font-sans p-4">
-        <Auth />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex flex-col font-sans">
-      <Header setView={setView} currentView={view} currentUser={currentUser} onLogout={handleLogout} />
+      <Header setView={setView} currentView={view} />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
          {view === 'modules' && (
           <div className="mb-8 p-4 bg-brand-gray-dark rounded-lg shadow-lg">
