@@ -45,6 +45,12 @@ export const Header: React.FC<HeaderProps> = ({ setView, currentView }) => {
               <NavLink view="quiz" currentView={currentView} setView={setView}>Quiz</NavLink>
               <NavLink view="glossary" currentView={currentView} setView={setView}>Glossary</NavLink>
               <NavLink view="chat" currentView={currentView} setView={setView}>AI Chat</NavLink>
+              <a 
+                href="mailto:contact@development-archive.com" 
+                className="px-4 py-2 rounded-full text-sm font-medium transition-colors duration-300 border border-brand-green text-brand-green hover:bg-brand-green hover:text-brand-black"
+              >
+                Contact
+              </a>
             </div>
             <div className="md:hidden">
               {/* Mobile menu could be adapted here */}
