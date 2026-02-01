@@ -28,3 +28,12 @@ export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
 }
+
+export interface Product {
+  id: string;
+  name: string;
+  price: string;
+  description: string;
+  imageUrl: string;
+  printifyUrl: string;
+}

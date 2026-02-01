@@ -8,12 +8,13 @@ import { LessonView } from './components/LessonView';
 import { Quiz } from './components/Quiz';
 import { Glossary } from './components/Glossary';
 import { Chat } from './components/Chat';
+import { Store } from './components/Store';
 import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
 import type { Lesson, CourseModule } from './types';
 import { courseModules } from './constants';
 
-export type View = 'home' | 'modules' | 'lesson' | 'quiz' | 'glossary' | 'chat' | 'contact';
+export type View = 'home' | 'modules' | 'lesson' | 'quiz' | 'glossary' | 'chat' | 'store' | 'contact';
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('home');
@@ -71,6 +72,8 @@ const App: React.FC = () => {
         return <Glossary />;
       case 'chat':
         return <Chat />;
+      case 'store':
+        return <Store />;
       case 'contact':
         return <Contact />;
       case 'home':

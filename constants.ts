@@ -1,5 +1,5 @@
 
-import type { CourseModule, QuizQuestion, GlossaryTerm } from './types';
+import type { CourseModule, QuizQuestion, GlossaryTerm, Product } from './types';
 
 export const courseModules: CourseModule[] = [
   {
@@ -133,4 +133,53 @@ export const glossaryTerms: GlossaryTerm[] = [
   { term: 'Stochastic', definition: 'A term describing a system, like an LLM, that is based on probabilities. Its output is not always deterministic and can vary even with the same input.' },
   { term: 'Token', definition: 'A unit of text (can be a word, character, or part of a word) that an LLM uses to process and generate language.' },
   { term: 'Transformer', definition: 'A neural network architecture that relies on self-attention mechanisms, which is the foundation for most modern LLMs.' },
+];
+
+/*
+ * =================================================================
+ * HOW TO ADD YOUR PRINTIFY PRODUCTS
+ * =================================================================
+ * 1. Replace the mock data below with your actual products.
+ * 2. For each product, you will need:
+ *    - id: A unique identifier (e.g., 'prod-001').
+ *    - name: Your product's title.
+ *    - price: The price you want to display (e.g., '$29.99').
+ *    - description: A short, compelling description.
+ *    - imageUrl: A direct link to your product mockup image.
+ *    - printifyUrl: The direct link to the product on your storefront.
+ * =================================================================
+ */
+export const products: Product[] = [
+  {
+    id: 'prod-001',
+    name: 'AI Brain T-Shirt',
+    price: '$29.99',
+    description: 'A comfortable and stylish tee featuring a high-quality print of a futuristic AI brain circuit. Made from 100% organic cotton.',
+    imageUrl: 'https://placehold.co/600x600/212529/8AC926?text=AI+T-Shirt&font=inter',
+    printifyUrl: 'https://your-store.com/products/ai-brain-t-shirt',
+  },
+  {
+    id: 'prod-002',
+    name: 'Neural Network Mug',
+    price: '$18.99',
+    description: 'Start your day with a coffee and a dose of AI. This ceramic mug features a wrap-around design of a neural network.',
+    imageUrl: 'https://placehold.co/600x600/212529/8AC926?text=AI+Mug&font=inter',
+    printifyUrl: 'https://your-store.com/products/neural-network-mug',
+  },
+  {
+    id: 'prod-003',
+    name: '"Prompt Engineer" Hoodie',
+    price: '$54.99',
+    description: 'Stay warm while you craft the perfect prompts. This cozy hoodie is perfect for any AI enthusiast or professional.',
+    imageUrl: 'https://placehold.co/600x600/212529/8AC926?text=AI+Hoodie&font=inter',
+    printifyUrl: 'https://your-store.com/products/prompt-engineer-hoodie',
+  },
+  {
+    id: 'prod-004',
+    name: 'AI Sticker Pack',
+    price: '$12.99',
+    description: 'Decorate your laptop, water bottle, or notebook with this pack of 5 high-quality, waterproof vinyl AI-themed stickers.',
+    imageUrl: 'https://placehold.co/600x600/212529/8AC926?text=AI+Stickers&font=inter',
+    printifyUrl: 'https://your-store.com/products/ai-sticker-pack',
+  },
 ];

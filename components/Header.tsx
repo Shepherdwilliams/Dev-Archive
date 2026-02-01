@@ -45,6 +45,7 @@ export const Header: React.FC<HeaderProps> = ({ setView, currentView }) => {
               <NavLink view="quiz" currentView={currentView} setView={setView}>Quiz</NavLink>
               <NavLink view="glossary" currentView={currentView} setView={setView}>Glossary</NavLink>
               <NavLink view="chat" currentView={currentView} setView={setView}>AI Chat</NavLink>
+              <NavLink view="store" currentView={currentView} setView={setView}>Store</NavLink>
               <button 
                 onClick={() => setView('contact')}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-300 ${
