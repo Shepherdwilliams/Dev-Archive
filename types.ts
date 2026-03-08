@@ -22,6 +22,7 @@ export interface QuizQuestion {
 export interface GlossaryTerm {
   term: string;
   definition: string;
+  example?: string;
 }
 
 export interface ChatMessage {

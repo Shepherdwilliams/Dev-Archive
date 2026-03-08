@@ -120,19 +120,146 @@ export const quizQuestions: QuizQuestion[] = [
 ];
 
 export const glossaryTerms: GlossaryTerm[] = [
-  { term: 'Algorithm', definition: 'A set of rules or instructions given to an AI, computer, or other problem-solving machine.' },
-  { term: 'Backpropagation', definition: 'The core algorithm used to train neural networks. It works by calculating the error in the network\'s output and adjusting the internal weights to minimize that error for the next attempt.' },
-  { term: 'Deep Learning', definition: 'A subset of machine learning based on artificial neural networks with many layers (deep networks).' },
-  { term: 'Generative AI', definition: 'AI models that can create new content, such as text, images, or music, based on the data they were trained on.' },
-  { term: 'Hallucination', definition: 'An AI-generated response that is nonsensical, factually incorrect, or detached from the provided source material, often stated with high confidence.' },
-  { term: 'LLM (Large Language Model)', definition: 'A type of AI model designed to understand and generate human-like text, trained on massive datasets.' },
-  { term: 'Machine Learning', definition: 'A field of AI where systems learn patterns from data rather than being explicitly programmed.' },
-  { term: 'Neural Network', definition: 'A computing system inspired by the biological neural networks that constitute animal brains.' },
-  { term: 'Prompt Engineering', definition: 'The process of structuring text that can be interpreted and understood by a generative AI model to produce a desired output.' },
-  { term: 'Self-Attention', definition: 'The key mechanism in the Transformer architecture that allows the model to weigh the importance of different words in the input text to understand context.' },
-  { term: 'Stochastic', definition: 'A term describing a system, like an LLM, that is based on probabilities. Its output is not always deterministic and can vary even with the same input.' },
-  { term: 'Token', definition: 'A unit of text (can be a word, character, or part of a word) that an LLM uses to process and generate language.' },
-  { term: 'Transformer', definition: 'A neural network architecture that relies on self-attention mechanisms, which is the foundation for most modern LLMs.' },
+  { 
+    term: 'AGI (Artificial General Intelligence)', 
+    definition: 'A theoretical form of AI that possesses the ability to understand, learn, and apply its intelligence to any intellectual task that a human can perform.',
+    example: 'A robot that can learn to cook a new recipe, write a legal brief, and compose a symphony with the same level of proficiency as a human expert in those fields.'
+  },
+  { 
+    term: 'Algorithm', 
+    definition: 'A set of step-by-step rules or instructions given to an AI or computer to solve a specific problem or perform a task.',
+    example: 'A recipe for baking a cake is a simple algorithm; in AI, an algorithm might determine which posts appear in your social media feed.'
+  },
+  { 
+    term: 'Alignment', 
+    definition: 'The process of ensuring that an AI system\'s goals and behaviors are consistent with human values and intentions.',
+    example: 'Programming a self-driving car to prioritize human life over reaching a destination quickly.'
+  },
+  { 
+    term: 'ANI (Artificial Narrow Intelligence)', 
+    definition: 'Also known as "Weak AI," this is AI designed to perform a single, specific task. All current AI systems are ANI.',
+    example: 'Apple\'s Siri, Google Translate, or a chess-playing computer.'
+  },
+  { 
+    term: 'Backpropagation', 
+    definition: 'The core algorithm used to train neural networks. It calculates the error in the network\'s output and adjusts the internal weights to minimize that error.',
+    example: 'A student reviewing their test mistakes to understand where they went wrong and performing better on the next exam.'
+  },
+  { 
+    term: 'Bias', 
+    definition: 'Prejudice in favor of or against one thing, person, or group compared with another, often in a way considered to be unfair. In AI, this often stems from biased training data.',
+    example: 'A facial recognition system that is less accurate for people with darker skin tones because it was primarily trained on images of lighter-skinned people.'
+  },
+  { 
+    term: 'Computer Vision', 
+    definition: 'A field of AI that enables computers to derive meaningful information from digital images, videos, and other visual inputs.',
+    example: 'A self-driving car identifying a stop sign or a pedestrian in its path.'
+  },
+  { 
+    term: 'Deep Learning', 
+    definition: 'A subset of machine learning based on artificial neural networks with many layers (deep networks) that can learn complex patterns from large amounts of data.',
+    example: 'The technology behind voice assistants like Alexa or the image recognition used in Google Photos.'
+  },
+  { 
+    term: 'Fine-tuning', 
+    definition: 'The process of taking a pre-trained AI model and training it further on a smaller, specific dataset to improve its performance on a particular task.',
+    example: 'Taking a general language model and fine-tuning it on medical journals to create a specialized medical assistant.'
+  },
+  { 
+    term: 'Generative AI', 
+    definition: 'AI models that can create new content, such as text, images, music, or code, based on the patterns they learned from their training data.',
+    example: 'ChatGPT generating a poem or Midjourney creating a digital painting from a text prompt.'
+  },
+  { 
+    term: 'Hallucination', 
+    definition: 'An AI-generated response that is factually incorrect or nonsensical but presented with high confidence.',
+    example: 'An AI chatbot claiming that a fictional person won a real-world award and providing detailed (but fake) dates and locations.'
+  },
+  { 
+    term: 'LLM (Large Language Model)', 
+    definition: 'A type of AI model trained on vast amounts of text data to understand and generate human-like language.',
+    example: 'GPT-4, Claude, or Llama 3.'
+  },
+  { 
+    term: 'Machine Learning', 
+    definition: 'A field of AI where systems learn patterns and improve their performance from data rather than being explicitly programmed with every rule.',
+    example: 'An email filter learning to identify spam based on millions of examples of previous spam messages.'
+  },
+  { 
+    term: 'Multimodal', 
+    definition: 'An AI system that can process and understand multiple types of input data, such as text, images, and audio, simultaneously.',
+    example: 'An AI that can "look" at a photo of a refrigerator and "write" a recipe based on the ingredients it sees.'
+  },
+  { 
+    term: 'NLP (Natural Language Processing)', 
+    definition: 'A branch of AI that focuses on the interaction between computers and human language, including speech and text.',
+    example: 'Real-time language translation apps or sentiment analysis used by companies to track customer feedback.'
+  },
+  { 
+    term: 'Neural Network', 
+    definition: 'A computing system inspired by the structure of the human brain, consisting of interconnected "neurons" that process information in layers.',
+    example: 'The underlying architecture that allows an AI to recognize your face to unlock your smartphone.'
+  },
+  { 
+    term: 'Overfitting', 
+    definition: 'A modeling error that occurs when a machine learning model is too closely fit to its training data, making it perform poorly on new, unseen data.',
+    example: 'A student who memorizes the exact answers to a practice test but fails the real exam because the questions are slightly different.'
+  },
+  { 
+    term: 'Parameters', 
+    definition: 'The internal variables that an AI model learns from its training data. Generally, more parameters allow a model to handle more complex tasks.',
+    example: 'Think of parameters as the "knobs" and "dials" inside the AI that are adjusted during training to get the right output.'
+  },
+  { 
+    term: 'Prompt Engineering', 
+    definition: 'The art and science of crafting specific, effective text inputs (prompts) to get the best possible output from a generative AI model.',
+    example: 'Instead of asking "Write a story," asking "Write a 500-word sci-fi story about a robot discovering a flower on Mars, in the style of Ray Bradbury."'
+  },
+  { 
+    term: 'Reinforcement Learning', 
+    definition: 'A type of machine learning where an agent learns to make decisions by performing actions in an environment to achieve a goal and receiving rewards or penalties.',
+    example: 'An AI learning to play a video game by getting points for staying alive and losing points for crashing.'
+  },
+  { 
+    term: 'Self-Attention', 
+    definition: 'A mechanism in Transformer models that allows the model to look at every word in a sentence and decide which other words are most important for understanding its context.',
+    example: 'In the sentence "The animal didn\'t cross the street because it was too tired," self-attention helps the AI know that "it" refers to the "animal," not the "street."'
+  },
+  { 
+    term: 'Stochastic', 
+    definition: 'A term describing a system that is based on probabilities. Because LLMs are stochastic, they may give different answers to the same prompt.',
+    example: 'Rolling a die is a stochastic process; you know the possible outcomes, but you can\'t predict the exact result every time.'
+  },
+  { 
+    term: 'Supervised Learning', 
+    definition: 'A type of machine learning where the model is trained on a "labeled" dataset, meaning the data already includes the correct answers.',
+    example: 'Training an AI to recognize dogs by showing it thousands of pictures labeled "dog."'
+  },
+  { 
+    term: 'Token', 
+    definition: 'The basic unit of text that an LLM processes. A token can be a whole word, a part of a word, or even a single character.',
+    example: 'The word "unbelievable" might be broken down into three tokens: "un", "believ", and "able".'
+  },
+  { 
+    term: 'Transformer', 
+    definition: 'A neural network architecture that uses self-attention mechanisms to process data. It is the foundation of almost all modern Large Language Models.',
+    example: 'The "T" in ChatGPT stands for Transformer.'
+  },
+  { 
+    term: 'Turing Test', 
+    definition: 'A test proposed by Alan Turing in 1950 to determine if a machine can exhibit intelligent behavior indistinguishable from that of a human.',
+    example: 'A human judge having a text conversation with both a human and a computer; if the judge can\'t tell which is which, the computer passes the test.'
+  },
+  { 
+    term: 'Unsupervised Learning', 
+    definition: 'A type of machine learning where the model is given data without any labels and must find its own patterns or structures within that data.',
+    example: 'An AI analyzing a database of a million customers and automatically grouping them into "budget shoppers" and "luxury buyers" without being told what to look for.'
+  },
+  { 
+    term: 'Weights', 
+    definition: 'Values in a neural network that determine the strength of the connection between neurons. During training, these weights are adjusted to improve accuracy.',
+    example: 'If an AI is identifying a bird, the "weight" given to the presence of feathers would be much higher than the weight given to the color of the background.'
+  },
 ];
 
 /*

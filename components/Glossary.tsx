@@ -37,12 +37,23 @@ export const Glossary: React.FC = () => {
         </svg>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         {filteredTerms.length > 0 ? (
             filteredTerms.map(term => (
-                <div key={term.term} className="bg-brand-gray-dark/50 p-6 rounded-lg border border-brand-border">
-                <h3 className="text-xl font-bold text-brand-green">{term.term}</h3>
-                <p className="text-brand-light-gray mt-2">{term.definition}</p>
+                <div key={term.term} className="bg-brand-gray-dark/50 p-6 rounded-lg border border-brand-border hover:border-brand-green/50 transition-colors">
+                  <h3 className="text-2xl font-bold text-brand-green mb-3">{term.term}</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <span className="text-xs uppercase tracking-wider text-brand-light-gray font-semibold block mb-1">Definition</span>
+                      <p className="text-white leading-relaxed">{term.definition}</p>
+                    </div>
+                    {term.example && (
+                      <div className="pt-4 border-t border-brand-border/50">
+                        <span className="text-xs uppercase tracking-wider text-brand-light-gray font-semibold block mb-1">Example</span>
+                        <p className="text-brand-light-gray italic">"{term.example}"</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
             ))
         ) : (
