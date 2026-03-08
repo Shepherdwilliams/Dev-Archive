@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { motion } from 'framer-motion';
 import type { View } from '../App';
 
 interface HeaderProps {
@@ -17,13 +18,18 @@ const NavLink: React.FC<{
   return (
     <button
       onClick={() => setView(view)}
-      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 ${
-        isActive
-          ? 'bg-brand-green text-brand-black'
-          : 'text-brand-light-gray hover:bg-brand-gray-dark hover:text-white'
-      }`}
+      className="relative px-3 py-2 text-sm font-medium transition-colors duration-300"
     >
-      {children}
+      <span className={`relative z-10 ${isActive ? 'text-brand-black' : 'text-brand-light-gray hover:text-white'}`}>
+        {children}
+      </span>
+      {isActive && (
+        <motion.div
+          layoutId="nav-pill"
+          className="absolute inset-0 bg-brand-green rounded-md"
+          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+        />
+      )}
     </button>
   );
 };

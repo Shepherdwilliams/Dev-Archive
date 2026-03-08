@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { glossaryTerms } from '../constants';
 
 export const Glossary: React.FC = () => {
@@ -38,29 +39,43 @@ export const Glossary: React.FC = () => {
       </div>
 
       <div className="space-y-6">
-        {filteredTerms.length > 0 ? (
-            filteredTerms.map(term => (
-                <div key={term.term} className="bg-brand-gray-dark/50 p-6 rounded-lg border border-brand-border hover:border-brand-green/50 transition-colors">
-                  <h3 className="text-2xl font-bold text-brand-green mb-3">{term.term}</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <span className="text-xs uppercase tracking-wider text-brand-light-gray font-semibold block mb-1">Definition</span>
-                      <p className="text-white leading-relaxed">{term.definition}</p>
-                    </div>
-                    {term.example && (
-                      <div className="pt-4 border-t border-brand-border/50">
-                        <span className="text-xs uppercase tracking-wider text-brand-light-gray font-semibold block mb-1">Example</span>
-                        <p className="text-brand-light-gray italic">"{term.example}"</p>
+        <AnimatePresence mode="popLayout">
+          {filteredTerms.length > 0 ? (
+              filteredTerms.map((term, index) => (
+                  <motion.div 
+                    key={term.term} 
+                    layout
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className="tech-card p-6 rounded-xl"
+                  >
+                    <h3 className="text-2xl font-bold text-brand-green mb-3">{term.term}</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <span className="text-xs uppercase tracking-wider text-brand-light-gray font-semibold block mb-1">Definition</span>
+                        <p className="text-white leading-relaxed">{term.definition}</p>
                       </div>
-                    )}
-                  </div>
-                </div>
-            ))
-        ) : (
-            <div className="text-center p-8 bg-brand-gray-dark rounded-lg">
-                <p className="text-brand-light-gray">No terms found for "{searchTerm}".</p>
-            </div>
-        )}
+                      {term.example && (
+                        <div className="pt-4 border-t border-brand-border/50">
+                          <span className="text-xs uppercase tracking-wider text-brand-light-gray font-semibold block mb-1">Example</span>
+                          <p className="text-brand-light-gray italic">"{term.example}"</p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+              ))
+          ) : (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center p-8 bg-brand-gray-dark rounded-lg"
+              >
+                  <p className="text-brand-light-gray">No terms found for "{searchTerm}".</p>
+              </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

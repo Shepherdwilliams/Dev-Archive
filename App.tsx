@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { CurriculumGrid } from './components/CurriculumGrid';
@@ -61,34 +62,49 @@ const App: React.FC = () => {
   }, [view, activeLesson]);
 
   const renderContent = () => {
-    switch (view) {
-      case 'modules':
-        return <CourseModules onSelectLesson={handleSelectLesson} completedLessons={completedLessons} />;
-      case 'lesson':
-        return activeLesson && <LessonView lesson={activeLesson} onMarkComplete={handleMarkComplete} allModules={courseModules} onSelectLesson={handleSelectLesson}/>;
-      case 'quiz':
-        return <Quiz />;
-      case 'glossary':
-        return <Glossary />;
-      case 'chat':
-        return <Chat />;
-      case 'store':
-        return <Store />;
-      case 'contact':
-        return <Contact />;
-      case 'home':
-      default:
-        return (
-          <>
-            <Hero onStartLearning={() => setView('modules')} />
-            <CurriculumGrid />
-          </>
-        );
-    }
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={view + (activeLesson?.id || '')}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        >
+          {(() => {
+            switch (view) {
+              case 'modules':
+                return <CourseModules onSelectLesson={handleSelectLesson} completedLessons={completedLessons} />;
+              case 'lesson':
+                return activeLesson && <LessonView lesson={activeLesson} onMarkComplete={handleMarkComplete} allModules={courseModules} onSelectLesson={handleSelectLesson}/>;
+              case 'quiz':
+                return <Quiz />;
+              case 'glossary':
+                return <Glossary />;
+              case 'chat':
+                return <Chat />;
+              case 'store':
+                return <Store />;
+              case 'contact':
+                return <Contact />;
+              case 'home':
+              default:
+                return (
+                  <>
+                    <Hero onStartLearning={() => setView('modules')} />
+                    <CurriculumGrid />
+                  </>
+                );
+            }
+          })()}
+        </motion.div>
+      </AnimatePresence>
+    );
   };
 
   return (
-    <div className="min-h-screen flex flex-col font-sans">
+    <div className="min-h-screen flex flex-col font-sans relative overflow-hidden">
+      <div className="scanline" />
       <Header setView={setView} currentView={view} />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
          {view === 'modules' && (

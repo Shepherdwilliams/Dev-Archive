@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { quizQuestions } from '../constants';
 
 export const Quiz: React.FC = () => {
@@ -41,66 +42,123 @@ export const Quiz: React.FC = () => {
 
   if (quizFinished) {
     return (
-      <div className="text-center bg-brand-gray-dark p-8 rounded-xl max-w-2xl mx-auto">
-        <h2 className="text-3xl font-bold text-white mb-4">Quiz Complete!</h2>
-        <p className="text-xl text-brand-green mb-6">Your Score: {score} / {quizQuestions.length}</p>
-        <button 
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="text-center tech-card p-12 rounded-2xl max-w-2xl mx-auto"
+      >
+        <h2 className="text-4xl font-bold text-white mb-6">Quiz Complete!</h2>
+        <div className="text-6xl font-black text-brand-green mb-8">{score} / {quizQuestions.length}</div>
+        <p className="text-xl text-brand-light-gray mb-10">
+          {score === quizQuestions.length ? "Perfect score! You're an AI master." : "Great effort! Keep learning to master the concepts."}
+        </p>
+        <motion.button 
           onClick={handleRestart}
-          className="bg-brand-green text-brand-black font-bold py-2 px-6 rounded-full hover:bg-brand-green-dark transition-colors duration-300"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="bg-brand-green text-brand-black font-bold py-3 px-8 rounded-full text-lg hover:bg-brand-green-dark transition-colors duration-300 shadow-lg shadow-brand-green/20"
         >
           Restart Quiz
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
     );
   }
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-4xl font-bold text-center text-white mb-8">Test Your Knowledge</h1>
-      <div className="bg-brand-gray-dark p-8 rounded-xl border border-brand-border shadow-lg">
-        <p className="text-sm text-brand-light-gray mb-2">Question {currentQuestionIndex + 1} of {quizQuestions.length}</p>
-        <h2 className="text-2xl font-semibold text-white mb-6">{currentQuestion.question}</h2>
-        <div className="space-y-4">
-          {currentQuestion.options.map((option, index) => {
-            let buttonClass = 'bg-brand-gray-dark hover:bg-brand-border';
-            if (showFeedback) {
-              if (index === currentQuestion.correctAnswerIndex) {
-                buttonClass = 'bg-brand-green/50 border-brand-green';
-              } else if (index === selectedAnswer) {
-                buttonClass = 'bg-brand-red/50 border-brand-red';
-              }
-            }
-            return (
-              <button
-                key={index}
-                onClick={() => handleAnswerSelect(index)}
-                disabled={showFeedback}
-                className={`w-full text-left p-4 rounded-lg border border-brand-border transition-colors duration-200 text-white ${buttonClass} ${!showFeedback ? 'cursor-pointer' : 'cursor-default'}`}
-              >
-                {option}
-              </button>
-            );
-          })}
+      <motion.h1 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-4xl md:text-6xl font-bold text-center text-white mb-12 tracking-tight glow-text"
+      >
+        Test Your Knowledge
+      </motion.h1>
+      
+      <motion.div 
+        className="tech-card p-8 sm:p-10 rounded-2xl relative overflow-hidden"
+        layout
+      >
+        <div className="flex justify-between items-center mb-8">
+          <span className="text-xs uppercase tracking-widest text-brand-light-gray font-bold">Question {currentQuestionIndex + 1} of {quizQuestions.length}</span>
+          <div className="h-1 w-32 bg-brand-border rounded-full overflow-hidden">
+            <motion.div 
+              className="h-full bg-brand-green"
+              initial={{ width: 0 }}
+              animate={{ width: `${((currentQuestionIndex + 1) / quizQuestions.length) * 100}%` }}
+            />
+          </div>
         </div>
 
-        {showFeedback && (
-          <div className="mt-6 text-center">
-            <p className={`text-lg font-bold ${isCorrect ? 'text-brand-green' : 'text-brand-red'}`}>
-              {isCorrect ? 'Correct!' : 'Incorrect.'}
-            </p>
-            <div className="mt-4 text-left bg-brand-black/50 p-4 rounded-lg border border-brand-border">
-              <h4 className="font-bold text-white">Rationale:</h4>
-              <p className="text-brand-light-gray">{currentQuestion.rationale}</p>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentQuestionIndex}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-10 leading-tight">{currentQuestion.question}</h2>
+            <div className="space-y-4">
+              {currentQuestion.options.map((option, index) => {
+                let buttonClass = 'bg-brand-gray-dark/40 hover:bg-brand-border/60';
+                if (showFeedback) {
+                  if (index === currentQuestion.correctAnswerIndex) {
+                    buttonClass = 'bg-brand-green/20 border-brand-green text-brand-green';
+                  } else if (index === selectedAnswer) {
+                    buttonClass = 'bg-brand-red/20 border-brand-red text-brand-red';
+                  }
+                }
+                return (
+                  <motion.button
+                    key={index}
+                    onClick={() => handleAnswerSelect(index)}
+                    disabled={showFeedback}
+                    whileHover={!showFeedback ? { x: 10, backgroundColor: 'rgba(138, 201, 38, 0.1)' } : {}}
+                    className={`w-full text-left p-5 rounded-xl border border-brand-border transition-all duration-300 font-medium text-lg ${buttonClass} ${!showFeedback ? 'cursor-pointer' : 'cursor-default'}`}
+                  >
+                    <div className="flex items-center space-x-4">
+                      <span className="opacity-30 font-mono text-sm">{String.fromCharCode(65 + index)}.</span>
+                      <span>{option}</span>
+                    </div>
+                  </motion.button>
+                );
+              })}
             </div>
-            <button
-              onClick={handleNextQuestion}
-              className="mt-4 bg-brand-green text-brand-black font-bold py-2 px-6 rounded-full hover:bg-brand-green-dark transition-colors duration-300"
+          </motion.div>
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showFeedback && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mt-10 pt-10 border-t border-brand-border/50 text-center"
             >
-              {currentQuestionIndex < quizQuestions.length - 1 ? 'Next Question' : 'Finish Quiz'}
-            </button>
-          </div>
-        )}
-      </div>
+              <motion.div
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                className={`text-2xl font-black mb-6 uppercase tracking-tighter ${isCorrect ? 'text-brand-green' : 'text-brand-red'}`}
+              >
+                {isCorrect ? 'Correct Transmission' : 'Signal Interference'}
+              </motion.div>
+              
+              <div className="text-left bg-brand-black/40 p-6 rounded-xl border border-brand-border/50 mb-8">
+                <h4 className="text-xs uppercase tracking-widest text-brand-light-gray font-bold mb-3">Analysis</h4>
+                <p className="text-brand-light-gray leading-relaxed">{currentQuestion.rationale}</p>
+              </div>
+
+              <motion.button
+                onClick={handleNextQuestion}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-brand-green text-brand-black font-bold py-3 px-10 rounded-full text-lg hover:bg-brand-green-dark transition-all duration-300 shadow-lg shadow-brand-green/20"
+              >
+                {currentQuestionIndex < quizQuestions.length - 1 ? 'Next Question' : 'Finish Quiz'}
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 };
