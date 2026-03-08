@@ -11,7 +11,7 @@ export const Contact: React.FC = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.name || !formData.email || !formData.message) {
             setError('Please fill out all fields.');
@@ -20,11 +20,48 @@ export const Contact: React.FC = () => {
         setError('');
         setIsLoading(true);
 
-        // Simulate network request
-        setTimeout(() => {
+        // Forcing the latest URL to avoid any environment variable conflicts
+        const scriptUrl = 'https://script.google.com/macros/s/AKfycbwcqP5oYKfswzNYsBd1qqOVTZ5oc3EUN81a_nz8rpn2WmWuVSt7gcU3VVQ_uuhnWxtk/exec';
+
+        console.log('Attempting to send to:', scriptUrl);
+
+        try {
+            // Using URLSearchParams to build the query string
+            const params = new URLSearchParams({
+                name: formData.name,
+                email: formData.email,
+                message: formData.message,
+                _t: Date.now().toString() // Anti-caching timestamp
+            });
+
+            const finalUrl = `${scriptUrl}?${params.toString()}`;
+            console.log('Navigating hidden iframe to:', finalUrl);
+
+            // Create a hidden iframe to perform a "real" navigation
+            // This is the most reliable way to handle Google's 302 redirects
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.name = 'hidden_submit_iframe';
+            document.body.appendChild(iframe);
+
+            // Set the source to trigger the script
+            iframe.src = finalUrl;
+
+            // Give it a few seconds to complete the hop before cleanup
+            setTimeout(() => {
+                if (document.body.contains(iframe)) {
+                    document.body.removeChild(iframe);
+                }
+            }, 5000);
+
+            console.log('Submission triggered via background navigation');
             setIsLoading(false);
             setIsSubmitted(true);
-        }, 1500);
+        } catch (err) {
+            console.error('Submission error:', err);
+            setError('Could not send message. Please try again later.');
+            setIsLoading(false);
+        }
     };
 
     if (isSubmitted) {
