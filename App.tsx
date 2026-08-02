@@ -11,6 +11,7 @@ import { Glossary } from './components/Glossary';
 import { Chat } from './components/Chat';
 import { ScienceLab } from './components/ScienceLab';
 import { BotsAndAgents } from './components/BotsAndAgents';
+import { Services } from './components/Services';
 import { Store } from './components/Store';
 import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
@@ -18,7 +19,7 @@ import { VideoIntro } from './components/VideoIntro';
 import type { Lesson, CourseModule } from './types';
 import { courseModules } from './constants';
 
-export type View = 'home' | 'modules' | 'lesson' | 'agents' | 'quiz' | 'glossary' | 'chat' | 'science' | 'store' | 'contact';
+export type View = 'home' | 'modules' | 'lesson' | 'agents' | 'services' | 'quiz' | 'glossary' | 'chat' | 'science' | 'store' | 'contact';
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('home');
@@ -91,6 +92,8 @@ const App: React.FC = () => {
                 return <CourseModules onSelectLesson={handleSelectLesson} completedLessons={completedLessons} />;
               case 'agents':
                 return <BotsAndAgents />;
+              case 'services':
+                return <Services />;
               case 'lesson':
                 return activeLesson && <LessonView lesson={activeLesson} onMarkComplete={handleMarkComplete} allModules={courseModules} onSelectLesson={handleSelectLesson}/>;
               case 'quiz':
@@ -111,6 +114,7 @@ const App: React.FC = () => {
                   <>
                     <Hero 
                       onStartLearning={() => setView('modules')} 
+                      onInPersonServices={() => setView('services')}
                       onExploreAgents={() => setView('agents')}
                       onPlayIntro={handleReplayIntro}
                     />

@@ -66,6 +66,7 @@ export const Header: React.FC<HeaderProps> = ({ setView, currentView, onReplayIn
               <NavLink view="home" currentView={currentView} setView={setView}>Home</NavLink>
               <NavLink view="modules" currentView={currentView} setView={setView}>Modules</NavLink>
               <NavLink view="agents" currentView={currentView} setView={setView}>🤖 Bots & Agents</NavLink>
+              <NavLink view="services" currentView={currentView} setView={setView}>💼 Services</NavLink>
               <NavLink view="quiz" currentView={currentView} setView={setView}>Quiz</NavLink>
               <NavLink view="glossary" currentView={currentView} setView={setView}>Glossary</NavLink>
               <NavLink view="chat" currentView={currentView} setView={setView}>AI Chat</NavLink>
@@ -103,6 +104,12 @@ export const Header: React.FC<HeaderProps> = ({ setView, currentView, onReplayIn
                 className={`px-2.5 py-1 rounded text-xs font-bold whitespace-nowrap ${currentView === 'home' ? 'bg-brand-green text-brand-black' : 'text-brand-light-gray'}`}
               >
                 Home
+              </button>
+              <button
+                onClick={() => setView('services')}
+                className={`px-2.5 py-1 rounded text-xs font-bold whitespace-nowrap ${currentView === 'services' ? 'bg-brand-green text-brand-black' : 'text-brand-green border border-brand-green/40'}`}
+              >
+                💼 Services
               </button>
               <button
                 onClick={() => setView('modules')}

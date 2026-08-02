@@ -10,6 +10,7 @@ const curriculumTopics = [
   { step: '05', title: 'AI Ethics & Alignment', description: 'Navigate critical conversations around model bias, hallucination mitigation, privacy guarantees, safety guardrails, and societal impacts.', icon: '🛡️', tag: 'Governance' },
   { step: '06', title: 'Bots & Autonomous Agents', description: 'Build production multi-agent automation engines for social scheduling, financial triage, inbox routing, and tool-use orchestration.', icon: '🤖', tag: 'Automation' },
   { step: '07', title: 'Interactive Evaluation & Quizzes', description: 'Solidify your mental models. Take interactive quizzes, track high scores on the local persistent leaderboard, and earn completion certificates.', icon: '🎯', tag: 'Assessment' },
+  { step: '08', title: 'In-Person Classes & Formation', description: 'Schedule face-to-face 1-on-1 or group prompt engineering masterclasses and end-to-end in-person business formation consulting.', icon: '💼', tag: 'In-Person Services' },
 ];
 
 export const CurriculumGrid: React.FC = () => {

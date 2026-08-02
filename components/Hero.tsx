@@ -5,10 +5,11 @@ import { motion } from 'framer-motion';
 interface HeroProps {
   onStartLearning: () => void;
   onExploreAgents?: () => void;
+  onInPersonServices?: () => void;
   onPlayIntro?: () => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onStartLearning, onExploreAgents, onPlayIntro }) => {
+export const Hero: React.FC<HeroProps> = ({ onStartLearning, onExploreAgents, onInPersonServices, onPlayIntro }) => {
   return (
     <section className="relative py-16 md:py-28 max-w-6xl mx-auto px-4 sm:px-6">
       {/* Background glow gradient accent */}
@@ -64,6 +65,17 @@ export const Hero: React.FC<HeroProps> = ({ onStartLearning, onExploreAgents, on
             <span>Start Learning Now</span>
             <span className="text-xl">→</span>
           </motion.button>
+
+          {onInPersonServices && (
+            <motion.button 
+              onClick={onInPersonServices}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="bg-brand-green/10 hover:bg-brand-green/20 text-brand-green font-bold px-8 py-4 rounded-full text-base sm:text-lg border border-brand-green/40 transition-all duration-300 flex items-center space-x-2 cursor-pointer shadow-lg shadow-brand-green/10"
+            >
+              <span>💼 In-Person Services</span>
+            </motion.button>
+          )}
 
           {onExploreAgents && (
             <motion.button 
