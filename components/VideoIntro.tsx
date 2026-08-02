@@ -69,12 +69,12 @@ export const VideoIntro: React.FC<VideoIntroProps> = ({ onComplete }) => {
       {isVisible && (
         <motion.div
           key="video-intro-overlay"
-          initial={{ opacity: 0 }}
+          initial={{ opacity: 1 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.8, ease: "easeInOut" }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
           className="fixed inset-0 z-[9999] w-screen h-screen bg-black flex items-center justify-center overflow-hidden select-none"
-          style={{ width: '100vw', height: '100vh', position: 'fixed', top: 0, left: 0 }}
+          style={{ width: '100vw', height: '100vh', position: 'fixed', top: 0, left: 0, backgroundColor: '#000000' }}
         >
           {/* Full-screen MP4 Video Element */}
           <video

@@ -25,7 +25,7 @@ const App: React.FC = () => {
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
 
-  // Video Intro state - plays on load, smooth fade out when complete
+  // Video Intro state - always plays on page load
   const [showIntro, setShowIntro] = useState<boolean>(true);
 
   const handleFinishIntro = () => {
@@ -125,26 +125,34 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col font-sans relative overflow-hidden">
+    <div className="relative bg-black min-h-screen overflow-hidden">
       {showIntro && <VideoIntro onComplete={handleFinishIntro} />}
-      <div className="scanline" />
-      <Header setView={setView} currentView={view} onReplayIntro={handleReplayIntro} />
-      <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-         {view === 'modules' && (
-          <div className="mb-8 p-4 bg-brand-gray-dark rounded-lg shadow-lg">
-            <h2 className="text-xl font-bold text-white mb-2">Your Progress</h2>
-            <div className="w-full bg-brand-border rounded-full h-4">
-              <div 
-                className="bg-brand-green h-4 rounded-full transition-all duration-500" 
-                style={{ width: `${progress}%` }}
-              ></div>
+      
+      {/* Main site content wrapper - hidden on first frame while intro plays to avoid flash of content */}
+      <div 
+        className={`min-h-screen flex flex-col font-sans relative overflow-hidden bg-brand-black transition-opacity duration-700 ease-out ${
+          showIntro ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'
+        }`}
+      >
+        <div className="scanline" />
+        <Header setView={setView} currentView={view} onReplayIntro={handleReplayIntro} />
+        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+           {view === 'modules' && (
+            <div className="mb-8 p-4 bg-brand-gray-dark rounded-lg shadow-lg">
+              <h2 className="text-xl font-bold text-white mb-2">Your Progress</h2>
+              <div className="w-full bg-brand-border rounded-full h-4">
+                <div 
+                  className="bg-brand-green h-4 rounded-full transition-all duration-500" 
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+              <p className="text-right text-sm mt-1 text-brand-green">{Math.round(progress)}% Complete</p>
             </div>
-            <p className="text-right text-sm mt-1 text-brand-green">{Math.round(progress)}% Complete</p>
-          </div>
-        )}
-        {renderContent()}
-      </main>
-      <Footer />
+          )}
+          {renderContent()}
+        </main>
+        <Footer />
+      </div>
     </div>
   );
 };
