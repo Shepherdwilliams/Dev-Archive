@@ -1,8 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Sparkles, 
-  Terminal, 
   Code, 
   Globe, 
   Webhook, 
@@ -10,37 +8,40 @@ import {
   FileText, 
   Video, 
   ShieldCheck, 
-  Cpu, 
-  CheckCircle, 
   ArrowRight, 
   Search, 
   Play, 
-  Zap, 
   Bot, 
   Send, 
   X, 
   Copy, 
   Check, 
-  Layers, 
   Wand2, 
-  FileCode, 
   RefreshCw,
-  Share2,
-  Sliders,
   CheckCircle2,
-  SlidersHorizontal,
-  ChevronRight
+  ChevronRight,
+  Star,
+  ExternalLink,
+  Calculator,
+  GitCompare,
+  Hash,
+  Volume2,
+  VolumeX,
+  Sparkles
 } from 'lucide-react';
+import { PromptTools } from './PromptTools';
+import { sciFiAudio } from './SoundEffects';
 
-export type Category = 'All' | 'Development' | 'Prompting' | 'Content & Marketing' | 'Specialized';
+export type Category = 'All' | 'Development' | 'Prompting' | 'Content & Marketing' | 'Specialized' | 'Favorites';
 export type Status = 'Active' | 'Beta' | 'Autonomous' | 'System Agent';
 
 export interface AgentData {
   id: string;
   codename: string;
   name: string;
-  category: Category;
+  category: Exclude<Category, 'All' | 'Favorites'>;
   status: Status;
+  tags: string[];
   icon: React.ReactNode;
   role: string;
   description: string;
@@ -56,6 +57,7 @@ export const agentsList: AgentData[] = [
     name: 'Prompt Crafting Agent',
     category: 'Prompting',
     status: 'System Agent',
+    tags: ['#PromptEngineering', '#AIStudio', '#Gemini', '#Claude'],
     icon: <Wand2 className="w-5 h-5 text-emerald-400" />,
     role: 'System Architect & Mega-Prompt Engineer',
     description: 'Refines raw ideas into optimized system instructions, chain-of-thought frameworks, and mega-prompts for Google AI Studio, Gemini 1.5/2.0, and Claude.',
@@ -93,6 +95,7 @@ Format your response with:
     name: 'Full-Stack Code Refactoring Agent',
     category: 'Development',
     status: 'Active',
+    tags: ['#NextJS', '#Tailwind', '#React', '#TypeScript'],
     icon: <Code className="w-5 h-5 text-cyan-400" />,
     role: 'React/Next.js & Tailwind Code Optimization Audit',
     description: 'Audits Next.js/React codebases, converts legacy components to modern Tailwind CSS, resolves UI/UX flashes or layout shifts, and ensures type safety.',
@@ -119,7 +122,7 @@ Instructions:
       },
       {
         label: 'Convert JS to Typed TS Interface',
-        prompt: 'Convert a untyped JavaScript data response object with nested array records into clean TypeScript interfaces.'
+        prompt: 'Convert an untyped JavaScript data response object with nested array records into clean TypeScript interfaces.'
       }
     ]
   },
@@ -129,6 +132,7 @@ Instructions:
     name: 'Lexicon & Dialect Validator Agent',
     category: 'Content & Marketing',
     status: 'Active',
+    tags: ['#Localization', '#Dialect', '#Content', '#Marketing'],
     icon: <Globe className="w-5 h-5 text-purple-400" />,
     role: 'Regional Terminology & Cultural Authenticity Auditor',
     description: 'Analyzes regional terminology, slang, and contextual language data to ensure authentic localization, dialect accuracy, and cultural resonance.',
@@ -165,6 +169,7 @@ Instructions:
     name: 'API & Webhook Glue Agent',
     category: 'Development',
     status: 'Autonomous',
+    tags: ['#Webhooks', '#Express', '#TypeScript', '#NodeJS'],
     icon: <Webhook className="w-5 h-5 text-emerald-400" />,
     role: 'TypeScript/Python Backend Route & Integration Generator',
     description: 'Automatically builds, tests, and deploys TypeScript/Python wrapper endpoints for connecting frontend forms directly to AI models or database backends (Supabase/Firebase).',
@@ -182,7 +187,7 @@ Requirements:
 - Provide step-by-step installation instructions for dependencies.`,
     presetPrompts: [
       {
-        label: 'Express Express/Vite Proxy Route for Gemini',
+        label: 'Express Proxy Route for Gemini',
         prompt: 'Create a production Express API route /api/generate in TypeScript that proxies user prompts securely to the @google/genai SDK with error handling.'
       },
       {
@@ -201,6 +206,7 @@ Requirements:
     name: 'Print-on-Demand & Merchandise Copilot',
     category: 'Content & Marketing',
     status: 'Active',
+    tags: ['#ECommerce', '#Merchandise', '#Midjourney', '#Shopify'],
     icon: <ShoppingBag className="w-5 h-5 text-amber-400" />,
     role: 'E-commerce Merchandise Asset & Listing Generator',
     description: 'Generates vector-ready SVG prompts, product listing descriptions, tag sets, and automated e-commerce copy for digital merchandise storefronts.',
@@ -223,7 +229,7 @@ Output Format:
         prompt: 'Create a merch listing for a retro sci-fi programmer hoodie featuring vintage code syntax and neon aesthetic.'
       },
       {
-        label: 'Minimalist Minimalist Science Mug',
+        label: 'Minimalist Science Mug',
         prompt: 'Generate an Etsy listing for a minimalist ceramic mug featuring vector chemistry element diagrams and witty lab puns.'
       },
       {
@@ -238,6 +244,7 @@ Output Format:
     name: 'Grant & SBIR Proposal Generator',
     category: 'Specialized',
     status: 'Beta',
+    tags: ['#Grants', '#SBIR', '#Research', '#NSF'],
     icon: <FileText className="w-5 h-5 text-blue-400" />,
     role: 'Federal Tech Grant & Solicitation Proposal Specialist',
     description: 'Transforms technical project documentation into structured proposal drafts tailored to federal tech grants (NSF, SBIR/STTR) and innovation solicitations.',
@@ -275,6 +282,7 @@ Structure:
     name: 'Media & Motion Prompt Engineer',
     category: 'Prompting',
     status: 'Active',
+    tags: ['#GenerativeVideo', '#Runway', '#Midjourney', '#Motion'],
     icon: <Video className="w-5 h-5 text-rose-400" />,
     role: 'Generative Video & Vector Animation Visual Architect',
     description: 'Generates high-precision generative video and image prompts (Luma, Runway, Midjourney) specifically optimized for vector art, retro logos, and motion intros.',
@@ -311,6 +319,7 @@ Output:
     name: 'Social Media Automation Agent',
     category: 'Content & Marketing',
     status: 'Autonomous',
+    tags: ['#Marketing', '#Twitter', '#LinkedIn', '#Growth'],
     icon: <Bot className="w-5 h-5 text-emerald-400" />,
     role: 'Multi-Platform Viral Post & Thread Generator',
     description: 'Crafts viral multi-platform social media posts, thread hooks, and audience engagement responses tailored for tech creators and engineering audiences.',
@@ -343,6 +352,7 @@ Outputs:
     name: 'Financial Audit & Risk Analyst Agent',
     category: 'Specialized',
     status: 'Autonomous',
+    tags: ['#Audit', '#Finance', '#RiskAnalysis', '#JSON'],
     icon: <ShieldCheck className="w-5 h-5 text-yellow-400" />,
     role: 'Invoice Parsing, Risk Calculation & Spending Audit',
     description: 'Parses raw invoice strings, extracts structured line items, calculates risk formulas, and enforces dual-signature spending policy thresholds.',
@@ -380,6 +390,7 @@ JSON Output Format:
     name: 'Smart Inbox & Support Triage Agent',
     category: 'Specialized',
     status: 'Active',
+    tags: ['#Support', '#RAG', '#Triage', '#CustomerSuccess'],
     icon: <Send className="w-5 h-5 text-indigo-400" />,
     role: 'RAG Grounded Customer Support & Inbox Triage',
     description: 'Ingests incoming customer emails, performs intent classification, queries RAG knowledge bases, and drafts empathy-driven support responses.',
@@ -409,44 +420,127 @@ Format:
 ];
 
 export const BotsAndAgents: React.FC = () => {
+  const [mainView, setMainView] = useState<'agents' | 'tools'>('agents');
   const [selectedCategory, setSelectedCategory] = useState<Category>('All');
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeAgent, setActiveAgent] = useState<AgentData | null>(null);
+
+  // Favorites state persisted in localStorage
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+
+  // Toast Feedback State
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Audio Mute State
+  const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
 
   // Agent Session Drawer / Runner state
   const [sessionInput, setSessionInput] = useState<string>('');
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
   const [executionSteps, setExecutionSteps] = useState<string[]>([]);
   const [executionOutput, setExecutionOutput] = useState<string | null>(null);
-  const [copied, setCopied] = useState<boolean>(false);
+  const [copiedOutput, setCopiedOutput] = useState<boolean>(false);
 
-  const categories: Category[] = ['All', 'Development', 'Prompting', 'Content & Marketing', 'Specialized'];
+  const categories: Category[] = ['All', 'Development', 'Prompting', 'Content & Marketing', 'Specialized', 'Favorites'];
 
-  // Filter agents based on category and search query
+  const allTags = useMemo(() => {
+    const tagsSet = new Set<string>();
+    agentsList.forEach(a => a.tags.forEach(t => tagsSet.add(t)));
+    return Array.from(tagsSet);
+  }, []);
+
+  // Load favorites from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('devArchiveFavoriteAgents');
+      if (saved) {
+        setFavorites(new Set(JSON.parse(saved)));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Save favorites to localStorage
+  const toggleFavorite = (agentId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    sciFiAudio.playClick();
+    setFavorites(prev => {
+      const updated = new Set(prev);
+      if (updated.has(agentId)) {
+        updated.delete(agentId);
+        showToast('Removed agent from favorites');
+      } else {
+        updated.add(agentId);
+        showToast('⭐ Added agent to favorites!');
+      }
+      try {
+        localStorage.setItem('devArchiveFavoriteAgents', JSON.stringify(Array.from(updated)));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+  };
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 2500);
+  };
+
+  const toggleAudio = () => {
+    const muted = sciFiAudio.toggleMute();
+    setIsAudioMuted(muted);
+  };
+
+  // Filter agents
   const filteredAgents = useMemo(() => {
     return agentsList.filter(agent => {
-      const matchesCategory = selectedCategory === 'All' || agent.category === selectedCategory;
+      // Category filter
+      let matchesCategory = true;
+      if (selectedCategory === 'Favorites') {
+        matchesCategory = favorites.has(agent.id);
+      } else if (selectedCategory !== 'All') {
+        matchesCategory = agent.category === selectedCategory;
+      }
+
+      // Tag filter
+      const matchesTag = !selectedTag || agent.tags.includes(selectedTag);
+
+      // Search query
       const q = searchQuery.toLowerCase();
       const matchesSearch = 
         agent.name.toLowerCase().includes(q) ||
         agent.codename.toLowerCase().includes(q) ||
         agent.role.toLowerCase().includes(q) ||
         agent.description.toLowerCase().includes(q) ||
+        agent.tags.some(t => t.toLowerCase().includes(q)) ||
         agent.capabilities.some(c => c.toLowerCase().includes(q));
-      return matchesCategory && matchesSearch;
+
+      return matchesCategory && matchesTag && matchesSearch;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, selectedTag, searchQuery, favorites]);
 
   const handleOpenSession = (agent: AgentData) => {
+    sciFiAudio.playClick();
     setActiveAgent(agent);
     setSessionInput(agent.presetPrompts[0]?.prompt || '');
     setExecutionSteps([]);
     setExecutionOutput(null);
   };
 
+  const handleCopySystemPrompt = (agent: AgentData, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    sciFiAudio.playSuccess();
+    navigator.clipboard.writeText(agent.systemInstruction);
+    showToast(`Copied ${agent.codename} System Instruction!`);
+  };
+
   const handleExecuteSession = async () => {
     if (!activeAgent || !sessionInput.trim()) return;
 
+    sciFiAudio.playBeep();
     setIsExecuting(true);
     setExecutionSteps([]);
     setExecutionOutput(null);
@@ -475,11 +569,12 @@ export const BotsAndAgents: React.FC = () => {
       const data = await res.json();
       if (data.text) {
         setExecutionOutput(data.text);
+        sciFiAudio.playSuccess();
       } else {
         throw new Error('Fallback response');
       }
     } catch {
-      // High quality structured fallback
+      sciFiAudio.playSuccess();
       setExecutionOutput(
         `### [${activeAgent.codename}] EXECUTION RESULT\n\n` +
         `**Agent Role:** ${activeAgent.role}\n` +
@@ -509,198 +604,346 @@ export const BotsAndAgents: React.FC = () => {
 
   const handleCopyOutput = () => {
     if (executionOutput) {
+      sciFiAudio.playSuccess();
       navigator.clipboard.writeText(executionOutput);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedOutput(true);
+      setTimeout(() => setCopiedOutput(false), 2000);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#07080a] text-slate-100 font-sans pb-20 selection:bg-emerald-500 selection:text-black">
+    <div className="min-h-screen bg-[#07080a] text-slate-100 font-sans pb-20 selection:bg-emerald-500 selection:text-black relative">
       {/* Background Tech Grid Lines */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293715_1px,transparent_1px),linear-gradient(to_bottom,#1f293715_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
 
+      {/* Floating Toast Notification */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-20 right-6 z-[11000] bg-emerald-400 text-black px-4 py-2.5 rounded-xl font-mono text-xs font-bold shadow-2xl flex items-center gap-2 border border-emerald-300"
+          >
+            <Sparkles className="w-4 h-4 fill-current" />
+            <span>{toastMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12">
         
-        {/* Top Badge & Hero Header */}
-        <div className="text-center space-y-6 max-w-4xl mx-auto mb-12 sm:mb-16">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-emerald-400 text-xs font-mono font-bold uppercase tracking-widest shadow-inner"
-          >
+        {/* Top Control Bar: Audio & Ticker */}
+        <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-800/80">
+          <div className="flex items-center gap-2 font-mono text-xs text-slate-400">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>AUTONOMOUS AI AGENT DIRECTORY</span>
-            <span className="text-slate-600">|</span>
-            <span className="text-slate-400">v3.8 ARCHIVE</span>
-          </motion.div>
+            <span className="text-white font-bold uppercase">SYSTEM STATUS:</span>
+            <span className="text-emerald-400">Gemini 1.5 Pro Operational</span>
+            <span className="hidden sm:inline text-slate-600">•</span>
+            <span className="hidden sm:inline text-slate-400">10 Agents Online</span>
+          </div>
 
+          <button
+            onClick={toggleAudio}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white text-xs font-mono transition-colors cursor-pointer"
+            title="Toggle Retro Sci-Fi UI Sounds"
+          >
+            {isAudioMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
+            <span className="hidden sm:inline">{isAudioMuted ? 'Muted' : 'Audio FX'}</span>
+          </button>
+        </div>
+
+        {/* Hero Header */}
+        <div className="text-center space-y-6 max-w-4xl mx-auto mb-10">
           <motion.h1
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
             className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-[1.1] uppercase font-mono"
           >
-            Autonomous <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">AI Agents</span> for Development & Prompting
+            AI Agents Showcase & <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">Prompt Studio</span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.1 }}
             className="text-slate-400 text-base sm:text-xl max-w-3xl mx-auto leading-relaxed font-light"
           >
-            Explore our high-performance roster of specialized AI agents designed to automate mega-prompting, full-stack React audits, API endpoints, federal grants, and digital merchandise workflows.
+            Interactive playground and directory for specialized AI agents, prompt optimization diff tools, and token calculators engineered for production AI workflows.
           </motion.p>
         </div>
 
-        {/* Filter Bar & Search Container */}
-        <div className="bg-slate-900/80 backdrop-blur-md p-4 rounded-2xl border border-slate-800 mb-10 shadow-2xl space-y-4 md:space-y-0 md:flex md:items-center md:justify-between gap-4">
-          
-          {/* Category Filter Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-wider font-bold transition-all duration-200 shrink-0 cursor-pointer ${
-                  selectedCategory === cat
-                    ? 'bg-emerald-400 text-black shadow-lg shadow-emerald-400/20 font-black'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+        {/* View Switcher Tabs: Directory vs Prompt Tools */}
+        <div className="flex items-center justify-center gap-3 mb-10">
+          <button
+            onClick={() => { sciFiAudio.playClick(); setMainView('agents'); }}
+            className={`px-5 py-2.5 rounded-xl font-mono text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
+              mainView === 'agents'
+                ? 'bg-emerald-400 text-black shadow-lg shadow-emerald-400/20'
+                : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
+            }`}
+          >
+            <Bot className="w-4 h-4" />
+            <span>🤖 AI Agents Directory ({agentsList.length})</span>
+          </button>
 
-          {/* Active Search Bar */}
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by agent, capability, or codename..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-400/80 transition-colors"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-200 text-xs"
-              >
-                ✕
-              </button>
-            )}
-          </div>
+          <button
+            onClick={() => { sciFiAudio.playClick(); setMainView('tools'); }}
+            className={`px-5 py-2.5 rounded-xl font-mono text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
+              mainView === 'tools'
+                ? 'bg-emerald-400 text-black shadow-lg shadow-emerald-400/20'
+                : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
+            }`}
+          >
+            <Calculator className="w-4 h-4" />
+            <span>⚡ Prompt Engineering Mini-Tools</span>
+          </button>
         </div>
 
-        {/* Agent Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <AnimatePresence mode="popLayout">
-            {filteredAgents.map((agent, index) => (
-              <motion.div
-                key={agent.id}
-                layout
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.96 }}
-                transition={{ duration: 0.2, delay: index * 0.04 }}
-                className="bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/5 group relative overflow-hidden"
-              >
-                {/* Subtle Glow Accent on Hover */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all pointer-events-none" />
-
-                <div className="space-y-4 relative z-10">
-                  {/* Top Row: Icon + Codename + Status Badge */}
-                  <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 group-hover:border-emerald-500/40 transition-colors shrink-0">
-                        {agent.icon}
-                      </div>
-                      <div>
-                        <span className="font-mono text-[10px] text-emerald-400 font-bold uppercase tracking-widest block">
-                          {agent.codename}
-                        </span>
-                        <span className="text-[10px] font-mono text-slate-500 uppercase">
-                          {agent.category}
-                        </span>
-                      </div>
-                    </div>
-
-                    <span
-                      className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border uppercase tracking-wider shrink-0 ${
-                        agent.status === 'Active'
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                          : agent.status === 'System Agent'
-                          ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
-                          : agent.status === 'Autonomous'
-                          ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
-                          : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+        {/* VIEW 1: AGENTS DIRECTORY */}
+        {mainView === 'agents' && (
+          <div className="space-y-8">
+            {/* Filter Bar & Search Container */}
+            <div className="bg-slate-900/80 backdrop-blur-md p-4 rounded-2xl border border-slate-800 shadow-2xl space-y-4">
+              
+              {/* Top Row: Categories & Search */}
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                {/* Category Filter Tabs */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => { sciFiAudio.playClick(); setSelectedCategory(cat); }}
+                      className={`px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-wider font-bold transition-all duration-200 shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                        selectedCategory === cat
+                          ? 'bg-emerald-400 text-black shadow-lg shadow-emerald-400/20 font-black'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                       }`}
                     >
-                      {agent.status}
-                    </span>
-                  </div>
-
-                  {/* Agent Title & Role */}
-                  <div>
-                    <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors tracking-tight">
-                      {agent.name}
-                    </h3>
-                    <p className="text-xs font-mono text-emerald-400/80 mt-0.5">
-                      {agent.role}
-                    </p>
-                  </div>
-
-                  {/* Purpose / Description */}
-                  <p className="text-slate-400 text-xs leading-relaxed font-light">
-                    {agent.description}
-                  </p>
-
-                  {/* Key Capabilities */}
-                  <div className="pt-2 space-y-2">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500 block">
-                      KEY CAPABILITIES:
-                    </span>
-                    <ul className="space-y-1.5">
-                      {agent.capabilities.map((cap, i) => (
-                        <li key={i} className="flex items-start gap-2 text-xs text-slate-300 font-sans">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                          <span className="leading-tight">{cap}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                      {cat === 'Favorites' && <Star className={`w-3.5 h-3.5 ${selectedCategory === 'Favorites' ? 'fill-black' : 'text-amber-400'}`} />}
+                      <span>{cat}</span>
+                      {cat === 'Favorites' && favorites.size > 0 && (
+                        <span className="ml-1 px-1.5 py-0.5 rounded-full bg-black/30 text-[10px]">
+                          {favorites.size}
+                        </span>
+                      )}
+                    </button>
+                  ))}
                 </div>
 
-                {/* Card CTA Footer */}
-                <div className="pt-6 mt-6 border-t border-slate-800/80 relative z-10">
+                {/* Search Input */}
+                <div className="relative w-full md:w-80">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by agent, tag, or capability..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-400/80 transition-colors"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-200 text-xs"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Bottom Row: Dynamic Hashtag Chips */}
+              <div className="pt-3 border-t border-slate-800/60 flex items-center gap-2 overflow-x-auto scrollbar-none">
+                <span className="text-[10px] font-mono text-slate-500 font-bold uppercase shrink-0 flex items-center gap-1">
+                  <Hash className="w-3 h-3 text-emerald-400" /> TAGS:
+                </span>
+                {selectedTag && (
                   <button
-                    onClick={() => handleOpenSession(agent)}
-                    className="w-full py-2.5 px-4 rounded-xl bg-slate-950 hover:bg-emerald-400 text-slate-200 hover:text-black font-mono text-xs font-bold uppercase tracking-wider border border-slate-800 hover:border-emerald-400 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                    onClick={() => setSelectedTag(null)}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 text-[11px] font-mono font-bold shrink-0 border border-emerald-500/40 cursor-pointer flex items-center gap-1"
                   >
-                    <span>Deploy Agent</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <span>Clear Tag ({selectedTag})</span>
+                    <span>✕</span>
                   </button>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+                )}
+                {allTags.map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => {
+                      sciFiAudio.playClick();
+                      setSelectedTag(selectedTag === tag ? null : tag);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-mono shrink-0 transition-colors cursor-pointer ${
+                      selectedTag === tag
+                        ? 'bg-emerald-400 text-black font-bold'
+                        : 'bg-slate-950 hover:bg-slate-800 text-slate-400 border border-slate-800'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        {filteredAgents.length === 0 && (
-          <div className="text-center py-20 bg-slate-900/40 rounded-2xl border border-slate-800">
-            <Bot className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-white font-mono">No matching agents found</h3>
-            <p className="text-slate-400 text-xs mt-1">Try clearing your search query or selecting another category filter.</p>
-            <button
-              onClick={() => { setSelectedCategory('All'); setSearchQuery(''); }}
-              className="mt-4 px-4 py-2 rounded-xl bg-slate-800 text-emerald-400 font-mono text-xs font-bold uppercase"
-            >
-              Reset Filters
-            </button>
+            {/* Agent Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <AnimatePresence mode="popLayout">
+                {filteredAgents.map((agent, index) => {
+                  const isFav = favorites.has(agent.id);
+                  return (
+                    <motion.div
+                      key={agent.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.96 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.96 }}
+                      transition={{ duration: 0.2, delay: index * 0.03 }}
+                      className="bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/5 group relative overflow-hidden"
+                    >
+                      {/* Subtle Glow Accent */}
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all pointer-events-none" />
+
+                      <div className="space-y-4 relative z-10">
+                        {/* Top Row: Icon + Codename + Favorite Star + Status */}
+                        <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 group-hover:border-emerald-500/40 transition-colors shrink-0">
+                              {agent.icon}
+                            </div>
+                            <div>
+                              <span className="font-mono text-[10px] text-emerald-400 font-bold uppercase tracking-widest block">
+                                {agent.codename}
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-500 uppercase">
+                                {agent.category}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {/* Favorite Bookmark Star */}
+                            <button
+                              onClick={(e) => toggleFavorite(agent.id, e)}
+                              className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-amber-400 transition-colors cursor-pointer"
+                              title={isFav ? "Remove Bookmark" : "Save Agent"}
+                            >
+                              <Star className={`w-4 h-4 ${isFav ? 'fill-amber-400 text-amber-400' : ''}`} />
+                            </button>
+
+                            {/* Status Badge */}
+                            <span
+                              className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border uppercase tracking-wider shrink-0 ${
+                                agent.status === 'Active'
+                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                  : agent.status === 'System Agent'
+                                  ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
+                                  : agent.status === 'Autonomous'
+                                  ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
+                                  : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                              }`}
+                            >
+                              {agent.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Agent Title & Role */}
+                        <div>
+                          <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors tracking-tight">
+                            {agent.name}
+                          </h3>
+                          <p className="text-xs font-mono text-emerald-400/80 mt-0.5">
+                            {agent.role}
+                          </p>
+                        </div>
+
+                        {/* Tags */}
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {agent.tags.map(t => (
+                            <span key={t} className="text-[10px] font-mono text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800/80">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Purpose / Description */}
+                        <p className="text-slate-400 text-xs leading-relaxed font-light">
+                          {agent.description}
+                        </p>
+
+                        {/* Key Capabilities */}
+                        <div className="pt-2 space-y-2">
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500 block">
+                            KEY CAPABILITIES:
+                          </span>
+                          <ul className="space-y-1.5">
+                            {agent.capabilities.map((cap, i) => (
+                              <li key={i} className="flex items-start gap-2 text-xs text-slate-300 font-sans">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                                <span className="leading-tight">{cap}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+
+                      {/* Card Footer: Deploy + Copy Prompt */}
+                      <div className="pt-6 mt-6 border-t border-slate-800/80 relative z-10 space-y-2">
+                        <button
+                          onClick={() => handleOpenSession(agent)}
+                          className="w-full py-2.5 px-4 rounded-xl bg-slate-950 hover:bg-emerald-400 text-slate-200 hover:text-black font-mono text-xs font-bold uppercase tracking-wider border border-slate-800 hover:border-emerald-400 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                        >
+                          <span>Deploy Agent</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            onClick={(e) => handleCopySystemPrompt(agent, e)}
+                            className="flex-1 py-1.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white font-mono text-[10px] font-bold uppercase border border-slate-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Copy className="w-3 h-3" />
+                            <span>Copy Prompt</span>
+                          </button>
+
+                          <a
+                            href="https://aistudio.google.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => sciFiAudio.playClick()}
+                            className="py-1.5 px-3 rounded-lg bg-slate-900 hover:bg-emerald-500/10 text-emerald-400 font-mono text-[10px] font-bold uppercase border border-slate-800 hover:border-emerald-500/40 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                            title="Open in Google AI Studio"
+                          >
+                            <span>AI Studio</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+
+            {filteredAgents.length === 0 && (
+              <div className="text-center py-20 bg-slate-900/40 rounded-2xl border border-slate-800">
+                <Bot className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-white font-mono">No matching agents found</h3>
+                <p className="text-slate-400 text-xs mt-1">Try clearing your filters or search query.</p>
+                <button
+                  onClick={() => { setSelectedCategory('All'); setSelectedTag(null); setSearchQuery(''); }}
+                  className="mt-4 px-4 py-2 rounded-xl bg-slate-800 text-emerald-400 font-mono text-xs font-bold uppercase cursor-pointer"
+                >
+                  Reset All Filters
+                </button>
+              </div>
+            )}
           </div>
+        )}
+
+        {/* VIEW 2: PROMPT ENGINEERING MINI-TOOLS */}
+        {mainView === 'tools' && (
+          <PromptTools />
         )}
       </div>
 
@@ -752,7 +995,7 @@ export const BotsAndAgents: React.FC = () => {
                       {activeAgent.presetPrompts.map((p, idx) => (
                         <button
                           key={idx}
-                          onClick={() => setSessionInput(p.prompt)}
+                          onClick={() => { sciFiAudio.playClick(); setSessionInput(p.prompt); }}
                           className="text-left text-xs font-mono p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center justify-between"
                         >
                           <span className="truncate pr-2">{p.label}</span>
@@ -786,7 +1029,7 @@ export const BotsAndAgents: React.FC = () => {
                   {isExecuting ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>EXECUTING REACT LOOP...</span>
+                      <span>EXECUTING REACT REASONING LOOP...</span>
                     </>
                   ) : (
                     <>
@@ -800,11 +1043,11 @@ export const BotsAndAgents: React.FC = () => {
                 {executionSteps.length > 0 && (
                   <div className="space-y-1.5 font-mono text-[11px] bg-slate-900 p-3 rounded-xl border border-slate-800">
                     <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                      AGENT LOGS:
+                      AGENT REASONING LOGS:
                     </span>
                     {executionSteps.map((step, idx) => (
                       <div key={idx} className="text-emerald-400 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
                         <span>{step}</span>
                       </div>
                     ))}
@@ -822,8 +1065,8 @@ export const BotsAndAgents: React.FC = () => {
                         onClick={handleCopyOutput}
                         className="flex items-center gap-1.5 text-xs font-mono text-slate-400 hover:text-white px-2.5 py-1 rounded bg-slate-800 border border-slate-700 cursor-pointer"
                       >
-                        {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copied ? 'COPIED' : 'COPY'}</span>
+                        {copiedOutput ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedOutput ? 'COPIED' : 'COPY'}</span>
                       </button>
                     </div>
 

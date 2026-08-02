@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Header } from './components/Header';
@@ -17,7 +16,8 @@ import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
 import { VideoIntro } from './components/VideoIntro';
 import { ScrollToTop } from './components/ScrollToTop';
-import type { Lesson, CourseModule } from './types';
+import { StarfieldCanvas } from './components/StarfieldCanvas';
+import type { Lesson } from './types';
 import { courseModules } from './constants';
 
 export type View = 'home' | 'modules' | 'lesson' | 'agents' | 'services' | 'quiz' | 'glossary' | 'chat' | 'science' | 'store' | 'contact';
@@ -27,8 +27,11 @@ const App: React.FC = () => {
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
 
-  // Video Intro state - always plays on page load
+  // Video Intro state - plays on page load
   const [showIntro, setShowIntro] = useState<boolean>(true);
+
+  // Retro Sci-Fi Canvas Starfield FX toggle
+  const [starfieldEnabled, setStarfieldEnabled] = useState<boolean>(true);
 
   const handleFinishIntro = () => {
     setShowIntro(false);
@@ -131,6 +134,9 @@ const App: React.FC = () => {
 
   return (
     <div className="relative bg-black min-h-screen overflow-hidden">
+      {/* Retro Starfield Particle Canvas */}
+      <StarfieldCanvas enabled={starfieldEnabled} />
+
       {showIntro && <VideoIntro onComplete={handleFinishIntro} />}
       
       {/* Main site content wrapper - hidden on first frame while intro plays to avoid flash of content */}
@@ -140,8 +146,14 @@ const App: React.FC = () => {
         }`}
       >
         <div className="scanline" />
-        <Header setView={setView} currentView={view} onReplayIntro={handleReplayIntro} />
-        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <Header 
+          setView={setView} 
+          currentView={view} 
+          onReplayIntro={handleReplayIntro} 
+          starfieldEnabled={starfieldEnabled}
+          setStarfieldEnabled={setStarfieldEnabled}
+        />
+        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 relative z-10">
            {view === 'modules' && (
             <div className="mb-8 p-4 bg-brand-gray-dark rounded-lg shadow-lg">
               <h2 className="text-xl font-bold text-white mb-2">Your Progress</h2>
