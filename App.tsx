@@ -16,6 +16,7 @@ import { Store } from './components/Store';
 import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
 import { VideoIntro } from './components/VideoIntro';
+import { ScrollToTop } from './components/ScrollToTop';
 import type { Lesson, CourseModule } from './types';
 import { courseModules } from './constants';
 
@@ -156,6 +157,7 @@ const App: React.FC = () => {
           {renderContent()}
         </main>
         <Footer />
+        <ScrollToTop />
       </div>
     </div>
   );
