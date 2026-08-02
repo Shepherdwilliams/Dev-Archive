@@ -1,37 +1,42 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-black: #212529;
-  --color-brand-gray-dark: #495057;
+  --color-brand-black: #0B0D0E;
+  --color-brand-gray-dark: #121518;
+  --color-brand-card: #161A1F;
   --color-brand-green: #8AC926;
-  --color-brand-green-dark: #73A820;
-  --color-brand-red: #E63946;
-  --color-brand-off-white: #F8F9FA;
-  --color-brand-light-gray: #CED4DA;
-  --color-brand-border: #343A40;
+  --color-brand-green-dark: #72A81E;
+  --color-brand-red: #EF4444;
+  --color-brand-off-white: #F3F4F6;
+  --color-brand-light-gray: #9DA8B6;
+  --color-brand-border: #22272E;
 }
 
 @layer base {
   body {
-    @apply bg-brand-black text-brand-off-white;
+    @apply bg-brand-black text-brand-off-white font-sans antialiased selection:bg-brand-green selection:text-brand-black;
     background-image: 
-      radial-gradient(circle at 2px 2px, rgba(138, 201, 38, 0.05) 1px, transparent 0);
-    background-size: 40px 40px;
+      radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.04) 1px, transparent 0);
+    background-size: 32px 32px;
   }
 }
 
 @layer components {
   .tech-card {
-    @apply bg-brand-gray-dark/20 backdrop-blur-sm border border-brand-border hover:border-brand-green/30 transition-all duration-500;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    @apply bg-brand-gray-dark/80 backdrop-blur-md border border-brand-border hover:border-brand-green/40 transition-all duration-300;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
   }
 
   .tech-button {
-    @apply relative overflow-hidden px-6 py-2 rounded-full font-medium transition-all duration-300;
+    @apply relative overflow-hidden px-6 py-2.5 rounded-full font-medium transition-all duration-300 active:scale-95;
   }
 
   .glow-text {
-    text-shadow: 0 0 10px rgba(138, 201, 38, 0.5);
+    text-shadow: 0 0 16px rgba(138, 201, 38, 0.35);
+  }
+
+  .mono-badge {
+    @apply font-mono text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-brand-green/30 bg-brand-green/10 text-brand-green inline-flex items-center gap-1.5 font-semibold;
   }
 }
 
@@ -46,8 +51,9 @@
   left: 0;
   width: 100%;
   height: 2px;
-  background: linear-gradient(to right, transparent, rgba(138, 201, 38, 0.2), transparent);
+  background: linear-gradient(to right, transparent, rgba(138, 201, 38, 0.25), transparent);
   z-index: 100;
   pointer-events: none;
-  animation: scanline 8s linear infinite;
+  animation: scanline 10s linear infinite;
 }
+

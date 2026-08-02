@@ -14,6 +14,7 @@ import { BotsAndAgents } from './components/BotsAndAgents';
 import { Store } from './components/Store';
 import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
+import { VideoIntro } from './components/VideoIntro';
 import type { Lesson, CourseModule } from './types';
 import { courseModules } from './constants';
 
@@ -23,6 +24,17 @@ const App: React.FC = () => {
   const [view, setView] = useState<View>('home');
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
+
+  // Video Intro state - plays on load, smooth fade out when complete
+  const [showIntro, setShowIntro] = useState<boolean>(true);
+
+  const handleFinishIntro = () => {
+    setShowIntro(false);
+  };
+
+  const handleReplayIntro = () => {
+    setShowIntro(true);
+  };
 
   // Load progress from localStorage on initial render
   useEffect(() => {
@@ -97,7 +109,11 @@ const App: React.FC = () => {
               default:
                 return (
                   <>
-                    <Hero onStartLearning={() => setView('modules')} />
+                    <Hero 
+                      onStartLearning={() => setView('modules')} 
+                      onExploreAgents={() => setView('agents')}
+                      onPlayIntro={handleReplayIntro}
+                    />
                     <CurriculumGrid />
                   </>
                 );
@@ -110,8 +126,9 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col font-sans relative overflow-hidden">
+      {showIntro && <VideoIntro onComplete={handleFinishIntro} />}
       <div className="scanline" />
-      <Header setView={setView} currentView={view} />
+      <Header setView={setView} currentView={view} onReplayIntro={handleReplayIntro} />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
          {view === 'modules' && (
           <div className="mb-8 p-4 bg-brand-gray-dark rounded-lg shadow-lg">

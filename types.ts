@@ -38,3 +38,12 @@ export interface Product {
   imageUrl: string;
   printifyUrl: string;
 }
+
+export interface LeaderboardEntry {
+  id: string;
+  name: string;
+  score: number;
+  total: number;
+  percentage: number;
+  date: string;
+}
