@@ -84,39 +84,56 @@ const elements: ElementData[] = [
   { number: 84, symbol: "Po", name: "Polonium", category: "post-transition metal", xpos: 16, ypos: 6 },
   { number: 85, symbol: "At", name: "Astatine", category: "metalloid", xpos: 17, ypos: 6 },
   { number: 86, symbol: "Rn", name: "Radon", category: "noble gas", xpos: 18, ypos: 6 },
-  // Period 7
+  // Period 7 complete
   { number: 87, symbol: "Fr", name: "Francium", category: "alkali metal", xpos: 1, ypos: 7 },
   { number: 88, symbol: "Ra", name: "Radium", category: "alkaline earth metal", xpos: 2, ypos: 7 },
   { number: 89, symbol: "Ac", name: "Actinium", category: "actinide", xpos: 3, ypos: 7 },
   { number: 104, symbol: "Rf", name: "Rutherfordium", category: "transition metal", xpos: 4, ypos: 7 },
+  { number: 105, symbol: "Db", name: "Dubnium", category: "transition metal", xpos: 5, ypos: 7 },
+  { number: 106, symbol: "Sg", name: "Seaborgium", category: "transition metal", xpos: 6, ypos: 7 },
+  { number: 107, symbol: "Bh", name: "Bohrium", category: "transition metal", xpos: 7, ypos: 7 },
+  { number: 108, symbol: "Hs", name: "Hassium", category: "transition metal", xpos: 8, ypos: 7 },
+  { number: 109, symbol: "Mt", name: "Meitnerium", category: "transition metal", xpos: 9, ypos: 7 },
+  { number: 110, symbol: "Ds", name: "Darmstadtium", category: "transition metal", xpos: 10, ypos: 7 },
+  { number: 111, symbol: "Rg", name: "Roentgenium", category: "transition metal", xpos: 11, ypos: 7 },
   { number: 112, symbol: "Cn", name: "Copernicium", category: "transition metal", xpos: 12, ypos: 7 },
+  { number: 113, symbol: "Nh", name: "Nihonium", category: "post-transition metal", xpos: 13, ypos: 7 },
+  { number: 114, symbol: "Fl", name: "Flerovium", category: "post-transition metal", xpos: 14, ypos: 7 },
+  { number: 115, symbol: "Mc", name: "Moscovium", category: "post-transition metal", xpos: 15, ypos: 7 },
+  { number: 116, symbol: "Lv", name: "Livermorium", category: "post-transition metal", xpos: 16, ypos: 7 },
+  { number: 117, symbol: "Ts", name: "Tennessine", category: "halogen", xpos: 17, ypos: 7 },
   { number: 118, symbol: "Og", name: "Oganesson", category: "noble gas", xpos: 18, ypos: 7 },
 ];
 
 const categoryColors: Record<string, string> = {
-  "nonmetal": "bg-emerald-500/20 border-emerald-500/40 text-emerald-400",
-  "noble gas": "bg-purple-500/20 border-purple-500/40 text-purple-400",
-  "alkali metal": "bg-red-500/20 border-red-500/40 text-red-400",
-  "alkaline earth metal": "bg-orange-500/20 border-orange-500/40 text-orange-400",
-  "metalloid": "bg-teal-500/20 border-teal-500/40 text-teal-400",
-  "halogen": "bg-yellow-500/20 border-yellow-500/40 text-yellow-400",
-  "transition metal": "bg-blue-500/20 border-blue-500/40 text-blue-400",
-  "post-transition metal": "bg-gray-500/20 border-gray-500/40 text-gray-400",
-  "lanthanide": "bg-pink-500/20 border-pink-500/40 text-pink-400",
-  "actinide": "bg-rose-500/20 border-rose-500/40 text-rose-400",
+  "nonmetal": "bg-emerald-500/20 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30",
+  "noble gas": "bg-purple-500/20 border-purple-500/40 text-purple-400 hover:bg-purple-500/30",
+  "alkali metal": "bg-red-500/20 border-red-500/40 text-red-400 hover:bg-red-500/30",
+  "alkaline earth metal": "bg-orange-500/20 border-orange-500/40 text-orange-400 hover:bg-orange-500/30",
+  "metalloid": "bg-teal-500/20 border-teal-500/40 text-teal-400 hover:bg-teal-500/30",
+  "halogen": "bg-yellow-500/20 border-yellow-500/40 text-yellow-400 hover:bg-yellow-500/30",
+  "transition metal": "bg-blue-500/20 border-blue-500/40 text-blue-400 hover:bg-blue-500/30",
+  "post-transition metal": "bg-gray-500/20 border-gray-500/40 text-gray-300 hover:bg-gray-500/30",
+  "lanthanide": "bg-pink-500/20 border-pink-500/40 text-pink-400 hover:bg-pink-500/30",
+  "actinide": "bg-rose-500/20 border-rose-500/40 text-rose-400 hover:bg-rose-500/30",
 };
-
-interface TooltipProps {
-    element: ElementData;
-}
 
 export const PeriodicTable: React.FC<{
   onSelectElement: (symbol: string) => void;
 }> = ({ onSelectElement }) => {
   return (
-    <div className="overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-brand-border">
+    <div className="w-full overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-brand-border">
+      {/* Group Numbers 1-18 Header */}
+      <div className="grid gap-1 min-w-[950px] mb-1" style={{ gridTemplateColumns: 'repeat(18, minmax(0, 1fr))' }}>
+        {Array.from({ length: 18 }, (_, i) => (
+          <div key={i + 1} className="text-center font-mono text-[9px] text-brand-green/70 font-bold">
+            {i + 1}
+          </div>
+        ))}
+      </div>
+
       <div 
-        className="grid gap-1 min-w-[800px]" 
+        className="grid gap-1 min-w-[950px]" 
         style={{ 
           gridTemplateColumns: 'repeat(18, minmax(0, 1fr))',
           gridTemplateRows: 'repeat(7, minmax(0, 1fr))'
@@ -125,32 +142,33 @@ export const PeriodicTable: React.FC<{
         {elements.map((el) => (
           <motion.button
             key={el.number}
-            whileHover={{ scale: 1.1, zIndex: 10 }}
+            whileHover={{ scale: 1.15, zIndex: 30 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => onSelectElement(el.symbol)}
-            className={`p-1 flex flex-col items-center justify-center border rounded transition-all group relative h-12 ${categoryColors[el.category] || 'bg-brand-border border-brand-border'}`}
+            title={`${el.name} (#${el.number}, ${el.category})`}
+            className={`p-1 flex flex-col items-center justify-center border rounded-lg transition-all group relative h-13 cursor-pointer ${categoryColors[el.category] || 'bg-brand-border border-brand-border'}`}
             style={{
               gridColumnStart: el.xpos,
               gridRowStart: el.ypos,
             }}
           >
-            <span className="text-[8px] font-mono opacity-60 absolute top-0.5 left-1">{el.number}</span>
-            <span className="text-sm font-bold">{el.symbol}</span>
-            <span className="text-[6px] uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
+            <span className="text-[9px] font-mono opacity-70 absolute top-0.5 left-1 font-bold">{el.number}</span>
+            <span className="text-base font-extrabold tracking-tight">{el.symbol}</span>
+            <span className="text-[7px] uppercase tracking-tighter opacity-80 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden text-ellipsis max-w-full px-0.5">
               {el.name}
             </span>
 
             {/* Subtle glow effect */}
-            <div className="absolute inset-0 bg-current opacity-0 blur-lg group-hover:opacity-10 transition-opacity" />
+            <div className="absolute inset-0 bg-current opacity-0 blur-md group-hover:opacity-20 transition-opacity rounded-lg pointer-events-none" />
           </motion.button>
         ))}
       </div>
       
-      <div className="mt-8 flex flex-wrap gap-4 items-center justify-center">
+      <div className="mt-6 flex flex-wrap gap-3 items-center justify-center p-3 bg-brand-black/30 rounded-xl border border-brand-border/60">
             {Object.keys(categoryColors).map(cat => (
-                <div key={cat} className="flex items-center gap-2 text-[10px] font-mono text-brand-light-gray uppercase tracking-widest">
-                    <div className={`w-3 h-3 rounded ${categoryColors[cat].split(' ')[0]}`}></div>
-                    {cat}
+                <div key={cat} className="flex items-center gap-1.5 text-[10px] font-mono text-brand-light-gray uppercase tracking-wider">
+                    <div className={`w-3 h-3 rounded ${categoryColors[cat].split(' ')[0]} border border-white/20`}></div>
+                    <span>{cat}</span>
                 </div>
             ))}
       </div>

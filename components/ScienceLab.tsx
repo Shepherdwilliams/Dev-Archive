@@ -112,8 +112,8 @@ export const ScienceLab: React.FC = () => {
     };
 
     return (
-        <div className="max-w-7xl mx-auto flex flex-col h-[calc(100vh-180px)]">
-            <div className="flex items-center justify-between mb-8">
+        <div className="max-w-7xl mx-auto flex flex-col min-h-[calc(100vh-120px)] pb-12">
+            <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-brand-green/20 flex items-center justify-center border border-brand-green/30">
                         <FlaskConical className="text-brand-green w-7 h-7" />
@@ -122,7 +122,7 @@ export const ScienceLab: React.FC = () => {
                         <h1 className="text-3xl font-bold text-white tracking-tight">Science <span className="text-brand-green">Lab</span></h1>
                         <p className="text-brand-light-gray flex items-center gap-2">
                              <span className="w-2 h-2 bg-brand-green rounded-full animate-pulse" />
-                             Pedagogical Support Terminal v2.4
+                             Pedagogical Support Terminal v2.4 (Zperiod Connected)
                         </p>
                     </div>
                 </div>
@@ -138,9 +138,9 @@ export const ScienceLab: React.FC = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-grow overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-grow">
                 {/* Side Info Panel */}
-                <div className="hidden lg:flex flex-col gap-4 col-span-1 h-full overflow-y-auto pr-2">
+                <div className="hidden lg:flex flex-col gap-4 col-span-1">
                     <div className="tech-card p-5 rounded-xl border-l-4 border-brand-green">
                         <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
                             <Info className="w-4 h-4 text-brand-green" />
@@ -181,7 +181,7 @@ export const ScienceLab: React.FC = () => {
                 </div>
 
                 {/* Main Research Terminal */}
-                <div className="lg:col-span-3 flex flex-col h-full bg-brand-black/40 rounded-2xl border border-brand-border overflow-hidden">
+                <div className="lg:col-span-3 flex flex-col min-h-[600px] bg-brand-black/40 rounded-2xl border border-brand-border overflow-hidden">
                     {/* Header with Table Toggle */}
                     <div className="p-4 border-b border-brand-border flex items-center justify-between bg-brand-black/20">
                         <div className="flex items-center gap-2">
@@ -192,27 +192,31 @@ export const ScienceLab: React.FC = () => {
                         </div>
                         <button 
                             onClick={() => setShowTable(!showTable)}
-                            className={`flex items-center gap-2 px-3 py-1 rounded-md text-[10px] font-mono border transition-all ${
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-mono font-bold border transition-all cursor-pointer ${
                                 showTable 
-                                ? 'bg-brand-green/20 border-brand-green/50 text-brand-green' 
+                                ? 'bg-brand-green text-brand-black border-brand-green' 
                                 : 'bg-brand-gray-dark border-brand-border text-brand-light-gray hover:border-brand-green/50'
                             }`}
                         >
-                            <Atom className="w-3 h-3" />
-                            {showTable ? 'HIDE TABLE' : 'SHOW TABLE'}
+                            <Atom className="w-3.5 h-3.5" />
+                            {showTable ? 'HIDE PERIODIC TABLE' : 'SHOW PERIODIC TABLE'}
                         </button>
                     </div>
 
-                    <div className="flex-grow flex flex-col overflow-hidden">
+                    <div className="flex-grow flex flex-col">
                         <AnimatePresence>
                             {showTable && (
                                 <motion.div 
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="overflow-hidden border-b border-brand-border bg-brand-black/20"
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="border-b border-brand-border bg-brand-black/40"
                                 >
-                                    <div className="p-4 max-h-[350px] overflow-y-auto">
+                                    <div className="p-4 sm:p-6 max-h-[600px] overflow-y-auto overflow-x-auto">
+                                        <div className="mb-2 flex justify-between items-center text-[10px] font-mono text-brand-light-gray/60">
+                                            <span>↔ Scroll left/right if needed on mobile</span>
+                                            <span>Click any element to run AI Analysis</span>
+                                        </div>
                                         <PeriodicTable onSelectElement={onSelectElement} />
                                     </div>
                                 </motion.div>
