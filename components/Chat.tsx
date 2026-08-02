@@ -1,9 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI, Chat as GenAIChat, GenerateContentResponse } from '@google/genai';
 import type { ChatMessage } from '../types';
-
-const API_KEY = process.env.API_KEY;
 
 const UserIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
@@ -25,7 +22,6 @@ export const Chat: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 
     const chatContainerRef = useRef<HTMLDivElement>(null);
-    const chatRef = useRef<GenAIChat | null>(null);
 
     useEffect(() => {
         if (chatContainerRef.current) {
@@ -39,44 +35,61 @@ export const Chat: React.FC = () => {
 
         const userMessage: ChatMessage = { role: 'user', text: input };
         setMessages(prev => [...prev, userMessage]);
+        const currentInput = input;
         setInput('');
         setIsLoading(true);
         setError(null);
 
         try {
-            if (!chatRef.current) {
-                const ai = new GoogleGenAI({ apiKey: API_KEY });
-                chatRef.current = ai.chats.create({
-                    model: 'gemini-flash-latest',
-                    config: {
-                        systemInstruction: 'You are a friendly and knowledgeable AI assistant for an educational website teaching the fundamentals of Artificial Intelligence. Your goal is to help users understand the course material and answer their questions about AI clearly and concisely. Keep your answers focused on the topic of AI and learning.',
-                    }
-                });
-            }
+            const systemInstruction = 'You are a friendly and knowledgeable AI assistant for an educational website teaching the fundamentals of Artificial Intelligence. Your goal is to help users understand the course material and answer their questions about AI clearly and concisely. Keep your answers focused on the topic of AI and learning.';
             
-            const stream = await chatRef.current.sendMessageStream({ message: input });
+            // Map messages to history format
+            const history = messages.map(msg => ({
+                role: msg.role,
+                parts: [{ text: msg.text }]
+            }));
 
-            let modelResponse = '';
-            setMessages(prev => [...prev, { role: 'model', text: '' }]);
+            const response = await fetch('/api/ai', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: currentInput,
+                    systemInstruction,
+                    history,
+                }),
+            });
 
-            for await (const chunk of stream) {
-                const c = chunk as GenerateContentResponse
-                const chunkText = c.text;
-                if(chunkText) {
-                    modelResponse += chunkText;
-                    setMessages(prev => {
-                        const newMessages = [...prev];
-                        newMessages[newMessages.length - 1].text = modelResponse;
-                        return newMessages;
-                    });
-                }
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to get AI response');
             }
+
+            const data = await response.json();
+            setMessages(prev => [...prev, { role: 'model', text: data.text }]);
 
         } catch (err) {
             console.error(err);
-            setError('Sorry, something went wrong. Please try again.');
-            // remove the empty model message on error
-            setMessages(prev => prev.slice(0, -1));
+            
+            // Fallback for simulation mode if API fails or is not configured
+            setTimeout(() => {
+                let response = "SIMULATION MODE (Local Fallback): ";
+                const q = currentInput.toLowerCase();
+                
+                if (q.includes("hi") || q.includes("hello")) {
+                    response += "Hello! I am the Dev Archive AI Assistant. I can help clarify concepts from the course if you have any questions.";
+                } else if (q.includes("what is ai")) {
+                    response += "Artificial Intelligence is the simulation of human intelligence processes by machines, especially computer systems. These processes include learning, reasoning, and self-correction.";
+                } else if (q.includes("machine learning")) {
+                    response += "Machine Learning (ML) is a subfield of AI that uses algorithms to allow computers to learn from and make predictions or decisions based on data, without being explicitly programmed.";
+                } else {
+                    response += "I'm currently unable to reach the AI server. Here is a simulated response based on our local database. Please check your connection or API key configuration.";
+                }
+                
+                setMessages(prev => [...prev, { role: 'model', text: response }]);
+                setIsLoading(false);
+            }, 800);
         } finally {
             setIsLoading(false);
         }

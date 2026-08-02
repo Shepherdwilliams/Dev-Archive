@@ -59,6 +59,43 @@ export const courseModules: CourseModule[] = [
       { id: '5-4', title: 'The Future of Work', content: 'The conversation around AI and jobs is shifting from replacement to augmentation. AI is becoming a tool that can augment human capabilities. This requires workers in many fields to develop **"AI literacy"** to learn how to collaborate with these systems effectively to stay competitive.' },
     ],
   },
+  {
+    id: 'bots-agents',
+    title: 'Module 6: Building Bots & Autonomous AI Agents',
+    description: 'Master the art of building autonomous AI bots and intelligent agents to automate productivity workflows across social media management, finance tracking, smart email triage, and business operations.',
+    lessons: [
+      {
+        id: '6-1',
+        title: 'What are AI Agents & Autonomous Bots?',
+        content: 'While standard Large Language Models respond passively to a single prompt, **Autonomous AI Agents** operate in an iterative loop: **Perceive $\\rightarrow$ Reason $\\rightarrow$ Select Tool $\\rightarrow$ Execute Action $\\rightarrow$ Observe Result**.\n\nAn AI Agent is equipped with:\n- **System Instructions & Persona:** Defines the agent’s objective, limits, and behavioral style.\n- **Tools (Function Calling):** Connects the model to real-world APIs like web search, database queries, financial calculators, or social media APIs.\n- **Memory Systems:** Short-term context memory (conversation state) and long-term memory (Retrieval-Augmented Generation / Vector Databases).\n- **Decision Engine:** Evaluates actions using utility estimation functions like $U(a, s) = \\sum P(s\'|s,a) \\cdot R(s\')$.'
+      },
+      {
+        id: '6-2',
+        title: 'Social Media Automation & Content Bots',
+        content: 'Social media management is one of the most immediate applications of productivity bots. A well-architected **Social Media Agent** handles content creation, post scheduling, sentiment monitoring, and automated engagement.\n\n**Core Capabilities of Social Media Bots:**\n- **Viral Content Generation:** Analyzing trending topics and generating platform-optimized posts (e.g., short-form posts for X/Twitter vs. long-form articles for LinkedIn).\n- **Comment & DM Moderation:** Reading incoming user comments, running sentiment classification, and generating helpful replies or flagging toxic input.\n- **Multi-Platform Dispatch:** Interacting with Twitter API v2, LinkedIn Publishing API, or Instagram Graph API.\n\n**Best Practice:** Always implement **Rate Limiting** and queue managers (like Redis/BullMQ) to respect API quotas and avoid platform bans.'
+      },
+      {
+        id: '6-3',
+        title: 'Financial & Market Analytics Agents',
+        content: 'Financial agents streamline high-stakes tasks such as expense classification, invoice OCR extraction, stock news sentiment scoring, and budget threshold alerts.\n\n**Key Workflows in Financial AI Automation:**\n- **Automated Expense & Invoice Parsing:** Using vision-LLMs or structured JSON generation to convert raw receipt scans into structured accounting entries.\n- **Portfolio & Risk Monitoring:** Evaluating portfolio volatility and drawdown thresholds using mathematical models like $\\text{Risk Score} = \\alpha \\cdot \\text{Volatility} + \\beta \\cdot \\text{Max Drawdown}$.\n- **Automated Alerting:** Triggering instant Slack or Webhook notifications when expense spikes or unusual price movements occur.\n\n**Safety Disclaimer:** Financial agents must operate with **Human-in-the-Loop (HITL)** controls before executing actual monetary transactions or wire transfers.'
+      },
+      {
+        id: '6-4',
+        title: 'Smart Email & Customer Support Agents',
+        content: 'Email is a major sink of daily productivity. **Smart Email Triage Agents** automatically categorize inbox messages, draft contextual replies, and escalate urgent requests.\n\n**Architecture of an Email Agent:**\n1. **Ingestion:** Fetching unread emails via Gmail API or Microsoft Graph API.\n2. **Classification:** Categorizing emails into buckets: *Sales Lead, Technical Support, Billing, Internal Urgent, or Spam*.\n3. **Knowledge Retrieval (RAG):** Searching internal company knowledge bases or FAQs for accurate technical details.\n4. **Draft Generation:** Creating a personalized response in draft status for human approval.\n\nThis workflow can reduce email triage time by over 80% while preserving accuracy.'
+      },
+      {
+        id: '6-5',
+        title: 'Multi-Agent Systems & Workflow Orchestration',
+        content: 'Complex business workflows often exceed the capability of a single agent. **Multi-Agent Systems (MAS)** break large goals down into specialized role-based agents that collaborate.\n\n**Popular Multi-Agent Patterns:**\n- **Sequential Chain:** Agent A (Researcher) $\\rightarrow$ Agent B (Writer) $\\rightarrow$ Agent C (Editor).\n- **Hierarchical Supervisor:** A Manager Agent delegates sub-tasks to Specialist Agents and aggregates results.\n- **ReAct (Reasoning + Acting) Loop:** Iteratively prompts the agent to state its "Thought", select an "Action", and observe the "Observation".\n\nFrameworks like CrewAI, AutoGen, and LangGraph make orchestrating multi-agent networks seamless.'
+      },
+      {
+        id: '6-6',
+        title: 'Deployment, API Security & Guardrails',
+        content: 'Deploying productivity bots to production requires robust security, rate limits, and guardrails to prevent unexpected behaviors.\n\n**Essential Safety Practices:**\n- **API Key Security:** Store secrets strictly in server-side environment variables (`.env`). Never expose keys to client browsers.\n- **Token & Execution Budgets:** Set strict step limits on agent loops (e.g., max 5 tool calls per task) to prevent infinite loops and runaway API costs.\n- **Input Sanitation & Injection Guardrails:** Sanitize incoming emails and social media comments to protect against prompt injection attacks.\n- **Audit Logging:** Maintain a persistent log of every tool execution, input prompt, and decision output for compliance.'
+      }
+    ]
+  }
 ];
 
 export const quizQuestions: QuizQuestion[] = [
@@ -116,10 +153,57 @@ export const quizQuestions: QuizQuestion[] = [
         ],
         correctAnswerIndex: 0,
         rationale: 'ANI is AI designed for a specific task. A spam filter is a perfect example because it does one job very well. The other options describe Artificial General Intelligence (AGI), which does not exist yet.'
+    },
+    {
+        question: 'What fundamentally distinguishes an Autonomous AI Agent from a basic LLM prompt?',
+        options: [
+            'An agent operates in a loop with tools, memory, and perception to take multi-step real-world actions.',
+            'An agent uses more parameters than an LLM.',
+            'An agent cannot write text or generate code.',
+            'An agent runs without electricity.'
+        ],
+        correctAnswerIndex: 0,
+        rationale: 'An Autonomous Agent expands on an LLM by maintaining state, taking actions through function tools (like email or social media APIs), observing results, and iterating in a perception-action loop.'
+    },
+    {
+        question: 'In email and support bot workflows, what does Retrieval-Augmented Generation (RAG) provide?',
+        options: [
+            'Instant financial wire transfers without checks',
+            'Contextual grounding by searching internal FAQs and documentation before generating a draft',
+            'A way to delete user emails permanently',
+            'A method to bypass API rate limits'
+        ],
+        correctAnswerIndex: 1,
+        rationale: 'RAG allows email and support agents to search private company documentation or knowledge bases first, preventing hallucinations and ensuring draft responses are accurate.'
     }
 ];
 
 export const glossaryTerms: GlossaryTerm[] = [
+  {
+    term: 'AI Agent (Autonomous Agent)',
+    definition: 'An AI system designed to achieve goals autonomously by perceiving its environment, reasoning, invoking external tools/APIs, observing results, and executing multi-step workflows.',
+    example: 'An email triage agent that automatically reads incoming messages, checks internal company policies, and drafts personalized customer service replies.'
+  },
+  {
+    term: 'Tool Calling / Function Calling',
+    definition: 'A mechanism that enables an LLM to request execution of external functions or APIs (e.g., searching a database, posting to Twitter, sending an email) based on structured JSON arguments.',
+    example: 'A financial bot invoking a stock market tool `getStockPrice(symbol="GOOG")` to retrieve current stock data before making a recommendation.'
+  },
+  {
+    term: 'ReAct Pattern (Reasoning + Acting)',
+    definition: 'An agent execution framework where the AI explicitly interleaves Thought, Action selection, and Observation steps in an iterative loop.',
+    example: 'Thought: "I need to check the user budget." -> Action: `query_budget()` -> Observation: "$400 left" -> Thought: "The expense exceeds the limit."'
+  },
+  {
+    term: 'RAG (Retrieval-Augmented Generation)',
+    definition: 'An architecture that retrieves relevant documents from an external knowledge base or vector database and passes them to the LLM to ground generated responses in factual data.',
+    example: 'A support bot pulling warranty terms from a company manual before drafting a customer return policy response.'
+  },
+  {
+    term: 'Human-in-the-Loop (HITL)',
+    definition: 'A system design safeguard where critical or high-risk actions proposed by an AI agent (e.g., sending financial payments or publishing public posts) require human review and approval before execution.',
+    example: 'A social media bot creating post drafts that sit in a review queue until a manager clicks "Approve & Publish".'
+  },
   { 
     term: 'AGI (Artificial General Intelligence)', 
     definition: 'A theoretical form of AI that possesses the ability to understand, learn, and apply its intelligence to any intellectual task that a human can perform.',

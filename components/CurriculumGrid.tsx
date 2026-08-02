@@ -8,6 +8,7 @@ const curriculumTopics = [
   { title: 'Module 3: Understanding LLMs', description: 'Dive into the tech behind chatbots. Learn about the game-changing "Transformer" architecture and how models generate human-like text.', icon: '📚' },
   { title: 'Module 4: Prompt Engineering', description: 'Learn to speak the language of AI. Master the art of crafting effective prompts to unlock the full potential of language models for any task.', icon: '✍️' },
   { title: 'Module 5: AI Ethics', description: 'Explore the important conversations surrounding AI. We cover critical topics like bias, privacy, and the impact of AI on the future of work.', icon: '🛡️' },
+  { title: 'Module 6: Bots & Autonomous Agents', description: 'Build productivity bots for social media scheduling, financial expense triage, email auto-responders, and multi-agent systems.', icon: '🤖' },
   { title: 'Test Your Knowledge', description: 'Solidify your understanding. Our interactive quizzes help you reinforce key concepts and track your learning progress through the course.', icon: '🎯' },
 ];
 

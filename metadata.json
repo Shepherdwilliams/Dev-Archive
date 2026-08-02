@@ -1,5 +1,6 @@
 {
   "name": "Development Archive",
-  "description": "An interactive educational website designed to teach the fundamentals of Artificial Intelligence to beginners, featuring course modules, interactive quizzes, and a comprehensive glossary.",
-  "requestFramePermissions": []
+  "description": "An interactive educational website featuring course modules on Artificial Intelligence, a Printify storefront, and a specialized Science Lab with an interactive periodic table for STEM pedagogical support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

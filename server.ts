@@ -1,10 +1,19 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
+import dotenv from "dotenv";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+dotenv.config();
+
+let __filename = "";
+let __dirname = "";
+
+try {
+  __filename = fileURLToPath(import.meta.url);
+  __dirname = path.dirname(__filename);
+} catch (e) {
+  // Fallback for CommonJS
+}
 
 async function startServer() {
   const app = express();
@@ -12,50 +21,59 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Printify API Proxy Route
-  app.get("/api/printify/products", async (req, res) => {
-    const apiKey = process.env.PRINTIFY_API_KEY;
-    const shopId = process.env.PRINTIFY_SHOP_ID;
+  // AI Chat Proxy
+  app.post("/api/ai", async (req, res) => {
+    const { message, systemInstruction, history } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY;
 
-    if (!apiKey || !shopId) {
-      return res.status(500).json({ 
-        error: "Printify API Key or Shop ID not configured in environment variables." 
-      });
+    if (!apiKey) {
+      return res.status(500).json({ error: "GEMINI_API_KEY is not configured on the server." });
     }
 
     try {
-      const response = await fetch(`https://api.printify.com/v1/shops/${shopId}/products.json`, {
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
+      const { GoogleGenAI } = await import("@google/genai");
+      const ai = new GoogleGenAI({
+          apiKey: apiKey,
+          httpOptions: {
+              headers: {
+                  'User-Agent': 'aistudio-build',
+              }
+          }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        return res.status(response.status).json(errorData);
-      }
+      // Prepare contents with history
+      const contents = history ? [...history] : [];
+      contents.push({ role: 'user', parts: [{ text: message }] });
 
-      const data = await response.json();
-      res.json(data);
-    } catch (error) {
-      console.error("Error fetching Printify products:", error);
-      res.status(500).json({ error: "Failed to fetch products from Printify" });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: contents,
+        config: {
+            systemInstruction: systemInstruction,
+        }
+      });
+
+      res.json({ text: response.text });
+    } catch (error: any) {
+      console.error("AI Proxy Error:", error);
+      res.status(500).json({ error: error.message || "Failed to process AI request" });
     }
   });
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
+    const { createServer } = await import("vite");
+    const vite = await createServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
     // Serve static files in production
-    app.use(express.static(path.join(__dirname, "dist")));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(__dirname, "dist", "index.html"));
+    const distPath = path.join(process.cwd(), "dist");
+    app.use(express.static(distPath));
+    app.get("*all", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
     });
   }
 

@@ -9,13 +9,15 @@ import { LessonView } from './components/LessonView';
 import { Quiz } from './components/Quiz';
 import { Glossary } from './components/Glossary';
 import { Chat } from './components/Chat';
+import { ScienceLab } from './components/ScienceLab';
+import { BotsAndAgents } from './components/BotsAndAgents';
 import { Store } from './components/Store';
 import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
 import type { Lesson, CourseModule } from './types';
 import { courseModules } from './constants';
 
-export type View = 'home' | 'modules' | 'lesson' | 'quiz' | 'glossary' | 'chat' | 'store' | 'contact';
+export type View = 'home' | 'modules' | 'lesson' | 'agents' | 'quiz' | 'glossary' | 'chat' | 'science' | 'store' | 'contact';
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('home');
@@ -75,6 +77,8 @@ const App: React.FC = () => {
             switch (view) {
               case 'modules':
                 return <CourseModules onSelectLesson={handleSelectLesson} completedLessons={completedLessons} />;
+              case 'agents':
+                return <BotsAndAgents />;
               case 'lesson':
                 return activeLesson && <LessonView lesson={activeLesson} onMarkComplete={handleMarkComplete} allModules={courseModules} onSelectLesson={handleSelectLesson}/>;
               case 'quiz':
@@ -83,6 +87,8 @@ const App: React.FC = () => {
                 return <Glossary />;
               case 'chat':
                 return <Chat />;
+              case 'science':
+                return <ScienceLab />;
               case 'store':
                 return <Store />;
               case 'contact':
