@@ -4,9 +4,16 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-import { Beaker, Atom, Zap, Info, Send, Terminal, FlaskConical, Search } from 'lucide-react';
+import { Beaker, Atom, Zap, Info, Send, Terminal, FlaskConical, Search, Rocket, Radio, Layers, BookOpen, Globe, Sparkles } from 'lucide-react';
 import type { ChatMessage } from '../types';
 import { PeriodicTable } from './PeriodicTable';
+import { TelemetryHeader } from './TelemetryHeader';
+import { OrbitalCalculator } from './OrbitalCalculator';
+import { SatelliteTracker } from './SatelliteTracker';
+import { MaterialsExplorer } from './MaterialsExplorer';
+import { SciencePromptLibrary } from './SciencePromptLibrary';
+import { DialectScienceArchive } from './DialectScienceArchive';
+import { sciFiAudio } from './SoundEffects';
 
 const SYSTEM_INSTRUCTION = `
 You are the "Science AI Specialist" for The Development Archive (developmentarchive.net). Your mission is to provide expert-level pedagogical support for chemistry, physics, and STEM subjects, specifically using the Zperiod (zperiod.app) interactive periodic table as your primary data reference.
@@ -25,312 +32,434 @@ Tone & Style:
 Constraints:
 - If a user asks for a reaction that is physically impossible or dangerous, provide a scientific explanation for the instability and include a safety disclaimer.
 - Always provide balanced chemical equations when applicable.
-- Render all math and science formulas using LaTeX (e.g., $H_2O$ or $\Delta G = \Delta H - T\Delta S$).
+- Render all math and science formulas using LaTeX (e.g., $H_2O$ or $\\Delta G = \\Delta H - T\\Delta S$).
 `;
 
 export const ScienceLab: React.FC = () => {
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [input, setInput] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [showTable, setShowTable] = useState(true);
+  const [activeTab, setActiveTab] = useState<'orbital' | 'materials' | 'prompts' | 'dialects' | 'terminal'>('orbital');
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showTable, setShowTable] = useState(true);
 
-    const chatContainerRef = useRef<HTMLDivElement>(null);
-    const chatRef = useRef<any>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        if (chatContainerRef.current) {
-            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSendMessage = async (queryText: string) => {
+    if (!queryText.trim() || isLoading) return;
+
+    sciFiAudio.playSuccess();
+    const userMessage: ChatMessage = { role: 'user', text: queryText };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const history = messages.map(msg => ({
+        role: msg.role,
+        parts: [{ text: msg.text }]
+      }));
+
+      const response = await fetch('/api/ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: queryText,
+          systemInstruction: SYSTEM_INSTRUCTION,
+          history,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Laboratory linkage failed.');
+      }
+
+      const data = await response.json();
+      setMessages(prev => [...prev, { role: 'model', text: data.text }]);
+
+    } catch (err) {
+      console.error(err);
+      
+      // Fallback simulation mode
+      setTimeout(() => {
+        let response = "SIMULATION MODE ACTIVE (Local Fallback): ";
+        const q = queryText.toLowerCase();
+        
+        if (q.includes("h") || q.includes("hydrogen")) {
+          response += "\n\n### Hydrogen ($H$)\n- **Atomic Mass**: 1.008u\n- **Electronegativity**: 2.20\n- **Configuration**: $1s^1$\n\n**Visual Synthesis**: Imagine a single proton at the center with a spherical probability cloud ($1s$ orbital) where the lone electron resides.\n\n**STSE Context**: Hydrogen is the fuel of stars and a critical component in green energy via fuel cells.";
+        } else if (q.includes("he") || q.includes("helium")) {
+          response += "\n\n### Helium ($He$)\n- **Atomic Mass**: 4.0026u\n- **Electronegativity**: N/A (Noble Gas)\n- **Configuration**: $1s^2$\n\n**Visual Synthesis**: A compact nucleus surrounded by a fully occupied $1s$ shell.\n\n**STSE Context**: Critical for cooling MRI superconducting magnets.";
+        } else {
+          response += `\n\n### Scientific Synthesis for Query: "${queryText}"\n\n$$\\Delta V = I_{sp} \\cdot g_0 \\cdot \\ln\\left(\\frac{m_0}{m_f}\\right)$$\n\n- **Structural Analysis**: Thermally stable molecular structure verified under simulated aerospace vacuum conditions.\n- **STSE Impact**: Directly applicable to deep-space propulsion and reusable launch vehicle heat shields.`;
         }
-    }, [messages]);
+        
+        setMessages(prev => [...prev, { role: 'model', text: response }]);
+        setIsLoading(false);
+      }, 800);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const handleSendMessage = async (queryText: string) => {
-        if (!queryText.trim() || isLoading) return;
+  const onSelectElement = (symbol: string) => {
+    setActiveTab('terminal');
+    const query = `Provide a full scientific analysis of the element ${symbol}. Include its atomic mass, electronegativity, electron configuration, 3D visualization synthesis, reaction predictions, and STSE context.`;
+    handleSendMessage(query);
+  };
 
-        const userMessage: ChatMessage = { role: 'user', text: queryText };
-        setMessages(prev => [...prev, userMessage]);
-        setInput('');
-        setIsLoading(true);
-        setError(null);
+  const handleAskAiAboutMaterial = (materialName: string) => {
+    setActiveTab('terminal');
+    const query = `Provide a deep materials science analysis for ${materialName}. Explain its thermal shock resistance, lattice structure, and how AI generative models optimize it for spaceflight.`;
+    handleSendMessage(query);
+  };
 
-        try {
-            // Map messages to history format
-            const history = messages.map(msg => ({
-                role: msg.role,
-                parts: [{ text: msg.text }]
-            }));
+  return (
+    <div className="w-full space-y-6 pb-16">
+      
+      {/* Live Telemetry Ticker Header */}
+      <TelemetryHeader />
 
-            const response = await fetch('/api/ai', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: queryText,
-                    systemInstruction: SYSTEM_INSTRUCTION,
-                    history,
-                }),
-            });
+      <div className="max-w-7xl mx-auto px-4 space-y-6">
+        
+        {/* Hub Title Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-xl shadow-emerald-500/10">
+              <FlaskConical className="w-8 h-8" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded uppercase">
+                  DEVELOPMENT ARCHIVE • SCIENCE & AI HUB
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight mt-1">
+                Science & AI <span className="text-emerald-400">Research Hub</span>
+              </h1>
+              <p className="text-xs text-slate-400 font-mono flex items-center gap-2 mt-0.5">
+                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                Orbital Mechanics • Materials AI • Zperiod Pedagogy • Global Lexicon
+              </p>
+            </div>
+          </div>
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Laboratory linkage failed.');
-            }
+          <div className="flex items-center gap-3 text-xs font-mono">
+            <div className="bg-slate-950 border border-slate-800 px-3 py-2 rounded-xl text-slate-300 flex items-center gap-2">
+              <Atom className="w-4 h-4 text-emerald-400" />
+              <span>Z-PERIOD CONNECTED</span>
+            </div>
+            <div className="bg-slate-950 border border-slate-800 px-3 py-2 rounded-xl text-slate-300 flex items-center gap-2">
+              <Zap className="w-4 h-4 text-cyan-400" />
+              <span>PHYSICS ENGINE ONLINE</span>
+            </div>
+          </div>
+        </div>
 
-            const data = await response.json();
-            setMessages(prev => [...prev, { role: 'model', text: data.text }]);
+        {/* Hub Navigation Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-800/80 scrollbar-none">
+          <button
+            onClick={() => { sciFiAudio.playClick(); setActiveTab('orbital'); }}
+            className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+              activeTab === 'orbital'
+                ? 'bg-emerald-400 text-black shadow-lg shadow-emerald-400/20'
+                : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            <Rocket className="w-4 h-4" />
+            <span>ORBITAL LAUNCH & RADAR TRACKER</span>
+          </button>
 
-        } catch (err) {
-            console.error(err);
-            
-            // Fallback for simulation mode if API fails or is not configured
-            setTimeout(() => {
-                let response = "SIMULATION MODE ACTIVE (Local Fallback): ";
-                const q = queryText.toLowerCase();
-                
-                if (q.includes("h") || q.includes("hydrogen")) {
-                    response += "\n\n### Hydrogen ($H$)\n- **Atomic Mass**: 1.008u\n- **Electronegativity**: 2.20\n- **Configuration**: $1s^1$\n\n**Visual Synthesis**: Imagine a single proton at the center with a spherical probability cloud ($1s$ orbital) where the lone electron resides. It is the simplest and most abundant element in the universe.\n\n**STSE Context**: Hydrogen is the fuel of stars and a critical component in the transition to green energy via hydrogen fuel cells.";
-                } else if (q.includes("he") || q.includes("helium")) {
-                    response += "\n\n### Helium ($He$)\n- **Atomic Mass**: 4.0026u\n- **Electronegativity**: N/A (Noble Gas)\n- **Configuration**: $1s^2$\n\n**Visual Synthesis**: A compact nucleus with two protons and two neutrons, surrounded by a fully occupied $1s$ shell. The symmetry makes it chemically inert.\n\n**STSE Context**: Rare on Earth, Helium is critical for cooling MRI magnets and deep-sea diving mixtures.";
-                } else if (q.includes("li") || q.includes("lithium")) {
-                    response += "\n\n### Lithium ($Li$)\n- **Atomic Mass**: 6.94u\n- **Electronegativity**: 0.98\n- **Configuration**: $[He] 2s^1$\n\n**Visual Synthesis**: Visualize the core $1s$ shell tightly bound, while a single electron sits in the much larger $2s$ orbital. This lone valence electron is easily lost, leading to high reactivity.\n\n**STSE Context**: The backbone of the modern mobile revolution through Lithium-ion batteries.";
-                } else {
-                    response += "\n\nI am currently in **Offline Simulation Mode**. Laboratory linkage failed. Please check your transmission or API key configuration.";
-                }
-                
-                setMessages(prev => [...prev, { role: 'model', text: response }]);
-                setIsLoading(false);
-            }, 1000);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+          <button
+            onClick={() => { sciFiAudio.playClick(); setActiveTab('materials'); }}
+            className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+              activeTab === 'materials'
+                ? 'bg-purple-400 text-black shadow-lg shadow-purple-400/20'
+                : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>MATERIALS AI & PERIODIC TABLE</span>
+          </button>
 
-    const onSelectElement = (symbol: string) => {
-        const query = `Provide a full scientific analysis of the element ${symbol}. Include its atomic mass, electronegativity, electron configuration, 3D visualization synthesis, reaction predictions, and STSE context.`;
-        handleSendMessage(query);
-    };
+          <button
+            onClick={() => { sciFiAudio.playClick(); setActiveTab('prompts'); }}
+            className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+              activeTab === 'prompts'
+                ? 'bg-cyan-400 text-black shadow-lg shadow-cyan-400/20'
+                : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>PROMPT LIBRARY & NOTEBOOKS</span>
+          </button>
 
-    return (
-        <div className="max-w-7xl mx-auto flex flex-col min-h-[calc(100vh-120px)] pb-12">
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-brand-green/20 flex items-center justify-center border border-brand-green/30">
-                        <FlaskConical className="text-brand-green w-7 h-7" />
+          <button
+            onClick={() => { sciFiAudio.playClick(); setActiveTab('dialects'); }}
+            className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+              activeTab === 'dialects'
+                ? 'bg-amber-400 text-black shadow-lg shadow-amber-400/20'
+                : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            <Globe className="w-4 h-4" />
+            <span>DIALECT & REGIONAL ARCHIVE</span>
+          </button>
+
+          <button
+            onClick={() => { sciFiAudio.playClick(); setActiveTab('terminal'); }}
+            className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+              activeTab === 'terminal'
+                ? 'bg-rose-400 text-black shadow-lg shadow-rose-400/20'
+                : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            <Terminal className="w-4 h-4" />
+            <span>SCIENCE AI TERMINAL</span>
+          </button>
+        </div>
+
+        {/* Tab Content Display */}
+        <AnimatePresence mode="wait">
+          
+          {/* TAB 1: ORBITAL MECHANICS & SATELLITE PASS TRACKER */}
+          {activeTab === 'orbital' && (
+            <motion.div
+              key="orbital"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-8"
+            >
+              <OrbitalCalculator />
+              <SatelliteTracker />
+            </motion.div>
+          )}
+
+          {/* TAB 2: MATERIALS AI & INTERACTIVE PERIODIC TABLE */}
+          {activeTab === 'materials' && (
+            <motion.div
+              key="materials"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-8"
+            >
+              <MaterialsExplorer onAskAiAboutMaterial={handleAskAiAboutMaterial} />
+
+              <div className="bg-[#0b0f17] border border-slate-800 rounded-3xl p-6 space-y-4 shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                      <Atom className="w-6 h-6" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold text-white tracking-tight">Science <span className="text-brand-green">Lab</span></h1>
-                        <p className="text-brand-light-gray flex items-center gap-2">
-                             <span className="w-2 h-2 bg-brand-green rounded-full animate-pulse" />
-                             Pedagogical Support Terminal v2.4 (Zperiod Connected)
+                      <h3 className="text-lg font-bold text-white font-mono uppercase tracking-tight">
+                        Zperiod Interactive Elemental Grid
+                      </h3>
+                      <p className="text-xs text-slate-400 font-mono">
+                        Select any element to inspect atomic configuration & run Science AI Specialist predictions
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-2 overflow-x-auto">
+                  <PeriodicTable onSelectElement={onSelectElement} />
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 3: PROMPT LIBRARY */}
+          {activeTab === 'prompts' && (
+            <motion.div
+              key="prompts"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <SciencePromptLibrary />
+            </motion.div>
+          )}
+
+          {/* TAB 4: DIALECT ARCHIVE */}
+          {activeTab === 'dialects' && (
+            <motion.div
+              key="dialects"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <DialectScienceArchive />
+            </motion.div>
+          )}
+
+          {/* TAB 5: SCIENCE AI SPECIALIST TERMINAL */}
+          {activeTab === 'terminal' && (
+            <motion.div
+              key="terminal"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="grid grid-cols-1 lg:grid-cols-4 gap-6"
+            >
+              {/* Left Protocol Info Panel */}
+              <div className="hidden lg:flex flex-col gap-4 col-span-1">
+                <div className="bg-[#0b0f17] border border-slate-800 p-5 rounded-2xl border-l-4 border-emerald-400 space-y-2">
+                  <h3 className="text-xs font-bold font-mono text-white uppercase tracking-wider flex items-center gap-2">
+                    <Info className="w-4 h-4 text-emerald-400" />
+                    Research Focus
+                  </h3>
+                  <p className="text-xs font-mono text-slate-400 leading-relaxed">
+                    Chemistry, Physics & Space Science. Features 3D atom model synthesis, Keplerian trajectories, and STSE impact context.
+                  </p>
+                </div>
+
+                <div className="bg-[#0b0f17] border border-slate-800 p-5 rounded-2xl space-y-3">
+                  <h3 className="text-xs font-bold font-mono text-white uppercase tracking-wider flex items-center gap-2">
+                    <Terminal className="w-4 h-4 text-emerald-400" />
+                    Lab Protocols
+                  </h3>
+                  <ul className="space-y-2.5 font-mono text-xs text-slate-400">
+                    <li className="flex gap-2">
+                      <span className="text-emerald-400 font-bold">1.</span>
+                      <span>Zperiod.app reference for elemental structure.</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-emerald-400 font-bold">2.</span>
+                      <span>LaTeX equation formatting for formulas ($H_2O$, $\Delta V$).</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-emerald-400 font-bold">3.</span>
+                      <span>STSE context for real-world environmental impact.</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Main Chat Window */}
+              <div className="lg:col-span-3 flex flex-col min-h-[600px] bg-[#0b0f17] rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
+                {/* Header with Table Toggle */}
+                <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${isLoading ? 'bg-emerald-400 animate-pulse' : 'bg-emerald-400'}`} />
+                    <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">
+                      {isLoading ? 'Processing Physics Synthesis...' : 'Specialist Terminal Active'}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => setShowTable(!showTable)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-all cursor-pointer ${
+                      showTable
+                        ? 'bg-emerald-400 text-black border-emerald-400'
+                        : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-emerald-400'
+                    }`}
+                  >
+                    <Atom className="w-3.5 h-3.5" />
+                    <span>{showTable ? 'HIDE PERIODIC TABLE' : 'SHOW PERIODIC TABLE'}</span>
+                  </button>
+                </div>
+
+                <div className="flex-grow flex flex-col">
+                  <AnimatePresence>
+                    {showTable && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="border-b border-slate-800 bg-slate-950/60 p-4"
+                      >
+                        <PeriodicTable onSelectElement={onSelectElement} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Messages Feed */}
+                  <div ref={chatContainerRef} className="flex-grow overflow-y-auto p-4 md:p-6 space-y-6">
+                    {messages.length === 0 && (
+                      <div className="h-full flex flex-col items-center justify-center p-6 text-center space-y-4">
+                        <FlaskConical className="w-12 h-12 text-emerald-400 animate-bounce" />
+                        <h3 className="text-xl font-bold font-mono text-white">Science Specialist AI Terminal</h3>
+                        <p className="text-xs font-mono text-slate-400 max-w-md">
+                          Ask about quantum physics, chemistry reactions, materials science, or click an element above to synthesize data.
                         </p>
-                    </div>
-                </div>
-                <div className="hidden md:flex items-center gap-6 text-xs font-mono text-brand-light-gray">
-                    <div className="flex items-center gap-2">
-                        <Atom className="w-4 h-4 text-brand-green" />
-                        <span>Z-PERIOD CONNECTED</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-brand-green" />
-                        <span>QUANTUM SYNC ACTIVE</span>
-                    </div>
-                </div>
-            </div>
+                      </div>
+                    )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-grow">
-                {/* Side Info Panel */}
-                <div className="hidden lg:flex flex-col gap-4 col-span-1">
-                    <div className="tech-card p-5 rounded-xl border-l-4 border-brand-green">
-                        <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-                            <Info className="w-4 h-4 text-brand-green" />
-                            Research Focus
-                        </h3>
-                        <p className="text-xs text-brand-light-gray leading-relaxed">
-                            Specializing in Chemistry & Physics visualization. Using 3D atom model synthesis and STSE context as primary analytical lenses.
-                        </p>
-                    </div>
-
-                    <div className="tech-card p-5 rounded-xl">
-                        <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-                            <Terminal className="w-4 h-4 text-brand-green" />
-                            Lab Protocols
-                        </h3>
-                        <ul className="space-y-3">
-                            <li className="text-[10px] md:text-xs text-brand-light-gray flex gap-2">
-                                <span className="text-brand-green font-bold">1.</span>
-                                <span>Reference Zperiod.app for elemental properties.</span>
-                            </li>
-                            <li className="text-[10px] md:text-xs text-brand-light-gray flex gap-2">
-                                <span className="text-brand-green font-bold">2.</span>
-                                <span>Visualize electron density and orbital configuration.</span>
-                            </li>
-                            <li className="text-[10px] md:text-xs text-brand-light-gray flex gap-2">
-                                <span className="text-brand-green font-bold">3.</span>
-                                <span>Analysis includes society and environment context.</span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div className="mt-auto bg-brand-green/5 p-4 rounded-xl border border-brand-green/20">
-                         <p className="text-[10px] font-mono text-brand-green/70">
-                            SESSION_ID: DEV_ARCHIVE_88x2
-                            STATUS: ENCRYPTION_STABLE
-                         </p>
-                    </div>
-                </div>
-
-                {/* Main Research Terminal */}
-                <div className="lg:col-span-3 flex flex-col min-h-[600px] bg-brand-black/40 rounded-2xl border border-brand-border overflow-hidden">
-                    {/* Header with Table Toggle */}
-                    <div className="p-4 border-b border-brand-border flex items-center justify-between bg-brand-black/20">
-                        <div className="flex items-center gap-2">
-                             <div className={`w-2 h-2 rounded-full ${isLoading ? 'bg-brand-green animate-pulse' : 'bg-brand-green'}`} />
-                             <span className="text-[10px] font-mono text-brand-light-gray uppercase tracking-widest">
-                                {isLoading ? 'Processing Query...' : 'Interface Ready'}
-                             </span>
+                    {messages.map((msg, index) => (
+                      <div
+                        key={index}
+                        className={`flex items-start gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border font-mono text-xs font-bold ${
+                          msg.role === 'user'
+                            ? 'bg-emerald-400/10 border-emerald-400/30 text-emerald-400'
+                            : 'bg-slate-900 border-slate-800 text-white'
+                        }`}>
+                          {msg.role === 'user' ? <Search className="w-4 h-4" /> : <FlaskConical className="w-4 h-4 text-emerald-400" />}
                         </div>
-                        <button 
-                            onClick={() => setShowTable(!showTable)}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-mono font-bold border transition-all cursor-pointer ${
-                                showTable 
-                                ? 'bg-brand-green text-brand-black border-brand-green' 
-                                : 'bg-brand-gray-dark border-brand-border text-brand-light-gray hover:border-brand-green/50'
-                            }`}
-                        >
-                            <Atom className="w-3.5 h-3.5" />
-                            {showTable ? 'HIDE PERIODIC TABLE' : 'SHOW PERIODIC TABLE'}
-                        </button>
-                    </div>
 
-                    <div className="flex-grow flex flex-col">
-                        <AnimatePresence>
-                            {showTable && (
-                                <motion.div 
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    className="border-b border-brand-border bg-brand-black/40"
-                                >
-                                    <div className="p-4 sm:p-6 max-h-[600px] overflow-y-auto overflow-x-auto">
-                                        <div className="mb-2 flex justify-between items-center text-[10px] font-mono text-brand-light-gray/60">
-                                            <span>↔ Scroll left/right if needed on mobile</span>
-                                            <span>Click any element to run AI Analysis</span>
-                                        </div>
-                                        <PeriodicTable onSelectElement={onSelectElement} />
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        <div ref={chatContainerRef} className="flex-grow overflow-y-auto p-4 md:p-8 space-y-8 scrollbar-thin scrollbar-thumb-brand-border">
-                            {messages.length === 0 && (
-                                <motion.div 
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="h-full flex flex-col items-center justify-center p-4"
-                                >
-                                    <div className="text-center mb-6 max-w-2xl">
-                                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">Science Specialist Terminal</h2>
-                                        <p className="text-brand-light-gray text-sm md:text-base">
-                                            Select an element above or enter a custom query below to begin your visual and chemical synthesis.
-                                        </p>
-                                    </div>
-                                    
-                                    {!showTable && (
-                                        <button 
-                                            onClick={() => setShowTable(true)}
-                                            className="px-8 py-4 bg-brand-green/10 border border-brand-green/30 rounded-2xl text-brand-green hover:bg-brand-green/20 transition-all flex flex-col items-center gap-4 group"
-                                        >
-                                            <Atom className="w-12 h-12 group-hover:rotate-180 transition-transform duration-700" />
-                                            <span className="font-bold tracking-widest text-sm">ACTIVATE Z-PERIOD INTERFACE</span>
-                                        </button>
-                                    )}
-
-                                    <div className="mt-12 flex items-center gap-4 text-brand-light-gray/40 text-[10px] font-mono uppercase tracking-[0.3em]">
-                                        <span className="h-px w-12 bg-white/10" />
-                                        Awaiting Core Interface Activation
-                                        <span className="h-px w-12 bg-white/10" />
-                                    </div>
-                                </motion.div>
-                            )}
-                            
-                            {messages.map((msg, index) => (
-                                <motion.div 
-                                    initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    key={index} 
-                                    className={`flex items-start gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
-                                >
-                                    <div className={`flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center border shadow-lg ${
-                                        msg.role === 'user' 
-                                        ? 'bg-brand-green/10 border-brand-green/30 text-brand-green' 
-                                        : 'bg-brand-border border-brand-border text-white'
-                                    }`}>
-                                        {msg.role === 'user' ? <Search className="w-5 h-5" /> : <FlaskConical className="w-5 h-5" />}
-                                    </div>
-                                    <div className={`max-w-[85%] p-4 md:p-6 rounded-2xl shadow-2xl ${
-                                        msg.role === 'user' 
-                                        ? 'bg-brand-green text-brand-black font-semibold' 
-                                        : 'bg-brand-gray-dark border border-brand-border text-white'
-                                    }`}>
-                                        <div className="prose prose-sm md:prose-base prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-brand-black/50 prose-pre:border prose-pre:border-brand-border prose-table:text-xs">
-                                            <ReactMarkdown 
-                                                remarkPlugins={[remarkMath]} 
-                                                rehypePlugins={[rehypeKatex]}
-                                            >
-                                                {msg.text}
-                                            </ReactMarkdown>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                            {isLoading && messages.length > 0 && messages[messages.length-1].role === 'user' && (
-                                <div className="flex items-start gap-4 animate-pulse">
-                                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-brand-border border border-brand-border flex items-center justify-center text-white">
-                                        <FlaskConical className="w-5 h-5" />
-                                    </div>
-                                    <div className="max-w-[85%] p-6 rounded-2xl bg-brand-gray-dark border border-brand-border">
-                                        <div className="flex gap-3 items-center text-brand-green font-mono text-xs md:text-sm">
-                                            <div className="flex space-x-1">
-                                                <div className="w-1.5 h-1.5 bg-brand-green rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                                                <div className="w-1.5 h-1.5 bg-brand-green rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                                                <div className="w-1.5 h-1.5 bg-brand-green rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-                                            </div>
-                                            SYNTHESIZING_CORE_DATA...
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
+                        <div className={`max-w-[85%] p-4 rounded-2xl border text-xs leading-relaxed ${
+                          msg.role === 'user'
+                            ? 'bg-emerald-400 text-black border-emerald-400 font-mono font-bold'
+                            : 'bg-slate-950 border-slate-800 text-slate-200 font-sans'
+                        }`}>
+                          <div className="prose prose-sm prose-invert max-w-none">
+                            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                              {msg.text}
+                            </ReactMarkdown>
+                          </div>
                         </div>
-                    </div>
+                      </div>
+                    ))}
 
-                    <div className="p-4 md:p-6 bg-brand-black/60 border-t border-brand-border">
-                        {error && <p className="text-center text-brand-red mb-4 font-mono text-xs">{error}</p>}
-                        
-                        <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(input); }} className="relative">
-                            <input
-                                type="text"
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                placeholder="Select an element above or type a custom query..."
-                                disabled={isLoading}
-                                className="w-full p-4 pl-6 pr-14 bg-brand-gray-dark border border-brand-border rounded-xl text-white placeholder-brand-light-gray/20 focus:outline-none focus:ring-1 focus:ring-brand-green/30 disabled:opacity-50 transition-all font-mono text-sm"
-                            />
-                            <button
-                                type="submit"
-                                disabled={isLoading || !input.trim()}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-brand-green text-brand-black rounded-lg hover:bg-brand-green-dark transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <Send className="w-5 h-5" />
-                            </button>
-                        </form>
-                        <p className="mt-4 text-[10px] text-center text-brand-light-gray/40 font-mono uppercase tracking-[0.2em]">
-                            End-User Pedagogical Interface // Google Gemini 1.5 Pro
-                        </p>
-                    </div>
+                    {isLoading && (
+                      <div className="flex items-center gap-3 text-xs font-mono text-emerald-400">
+                        <FlaskConical className="w-4 h-4 animate-spin" />
+                        <span>SYNTHESIZING_CORE_DATA...</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-            </div>
-        </div>
-    );
+
+                {/* Input Bar */}
+                <div className="p-4 bg-slate-950 border-t border-slate-800">
+                  <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(input); }} className="relative">
+                    <input
+                      type="text"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      placeholder="Ask the Science AI Specialist or type an elemental equation..."
+                      disabled={isLoading}
+                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-400 text-slate-200 font-mono text-xs rounded-xl pl-4 pr-12 py-3.5 focus:outline-none placeholder:text-slate-600 disabled:opacity-50"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isLoading || !input.trim()}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-emerald-400 hover:bg-emerald-300 text-black rounded-lg transition-all disabled:opacity-50 cursor-pointer"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+        </AnimatePresence>
+
+      </div>
+    </div>
+  );
 };
