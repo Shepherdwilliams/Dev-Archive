@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Briefcase, Calendar, MapPin, CheckCircle, ArrowRight, Shield, Sparkles, BookOpen, Clock, Building2, Send } from 'lucide-react';
+import { TargetDatePicker } from './TargetDatePicker';
+import { LocationPicker } from './LocationPicker';
 
 interface ServicesProps {
   onSelectContact?: (serviceName: string) => void;
@@ -551,27 +553,23 @@ Notes: ${bookingData.notes}`;
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-mono uppercase text-brand-light-gray mb-1">
-                          Preferred Location
+                          Preferred Location (GPS Verified)
                         </label>
-                        <input
-                          type="text"
+                        <LocationPicker
                           value={bookingData.location}
-                          onChange={(e) => setBookingData({ ...bookingData, location: e.target.value })}
-                          placeholder="e.g. In-Studio or City/State"
-                          className="w-full bg-brand-gray-dark border border-brand-border rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand-green"
+                          onChange={(val) => setBookingData({ ...bookingData, location: val })}
+                          placeholder="Click to detect GPS or search real location..."
                         />
                       </div>
 
                       <div>
                         <label className="block text-xs font-mono uppercase text-brand-light-gray mb-1">
-                          Target Date
+                          Target Date & Time Block
                         </label>
-                        <input
-                          type="text"
+                        <TargetDatePicker
                           value={bookingData.preferredDate}
-                          onChange={(e) => setBookingData({ ...bookingData, preferredDate: e.target.value })}
-                          placeholder="e.g. Next Tuesday or ASAP"
-                          className="w-full bg-brand-gray-dark border border-brand-border rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand-green"
+                          onChange={(val) => setBookingData({ ...bookingData, preferredDate: val })}
+                          placeholder="Click to pick date & time block..."
                         />
                       </div>
                     </div>

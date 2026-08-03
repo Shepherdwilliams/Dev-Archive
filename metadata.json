@@ -1,6 +1,6 @@
 {
   "name": "Development Archive",
   "description": "An interactive educational website featuring course modules on Artificial Intelligence, a Printify storefront, and a specialized Science Lab with an interactive periodic table for STEM pedagogical support.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
