@@ -1,8 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, User as UserIcon, LogIn, CheckCircle2 } from 'lucide-react';
 import type { View } from '../App';
 import { sciFiAudio } from './SoundEffects';
+import { User } from 'firebase/auth';
+import { UserProfile } from '../types';
 
 interface HeaderProps {
   setView: (view: View) => void;
@@ -10,6 +12,9 @@ interface HeaderProps {
   onReplayIntro?: () => void;
   starfieldEnabled: boolean;
   setStarfieldEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+  currentUser?: User | null;
+  userProfile?: UserProfile | null;
+  onOpenAuth?: () => void;
 }
 
 const NavLink: React.FC<{
@@ -48,7 +53,10 @@ export const Header: React.FC<HeaderProps> = ({
   currentView, 
   onReplayIntro,
   starfieldEnabled,
-  setStarfieldEnabled
+  setStarfieldEnabled,
+  currentUser,
+  userProfile,
+  onOpenAuth
 }) => {
   return (
     <header className="sticky top-0 z-50">
@@ -118,6 +126,30 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             <div className="hidden lg:flex items-center space-x-3">
+              {onOpenAuth && (
+                <button
+                  onClick={() => { sciFiAudio.playClick(); onOpenAuth(); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono uppercase flex items-center space-x-1.5 transition-all duration-200 cursor-pointer ${
+                    currentUser
+                      ? 'bg-brand-green/20 text-brand-green border border-brand-green/50 hover:bg-brand-green/30 font-bold'
+                      : 'bg-brand-gray-dark border border-brand-border text-white hover:border-brand-green'
+                  }`}
+                  title={currentUser ? 'Account & Profile' : 'Sign In / Register'}
+                >
+                  {currentUser ? (
+                    <>
+                      <UserIcon className="w-3.5 h-3.5 text-brand-green" />
+                      <span>{userProfile?.displayName || 'Account'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="w-3.5 h-3.5 text-brand-green" />
+                      <span>Sign In</span>
+                    </>
+                  )}
+                </button>
+              )}
+
               {onReplayIntro && (
                 <button
                   onClick={() => { sciFiAudio.playClick(); onReplayIntro(); }}
@@ -142,6 +174,15 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Mobile Nav Options */}
             <div className="flex lg:hidden items-center space-x-1.5 overflow-x-auto py-2 no-scrollbar">
+              {onOpenAuth && (
+                <button
+                  onClick={() => { sciFiAudio.playClick(); onOpenAuth(); }}
+                  className="px-2.5 py-1 rounded text-xs font-bold whitespace-nowrap bg-brand-green/20 text-brand-green border border-brand-green/50 flex items-center gap-1"
+                >
+                  <UserIcon className="w-3 h-3" />
+                  <span>{currentUser ? 'Account' : 'Sign In'}</span>
+                </button>
+              )}
               <button
                 onClick={() => { sciFiAudio.playClick(); setView('home'); }}
                 className={`px-2.5 py-1 rounded text-xs font-bold whitespace-nowrap ${currentView === 'home' ? 'bg-brand-green text-brand-black' : 'text-brand-light-gray'}`}

@@ -47,3 +47,22 @@ export interface LeaderboardEntry {
   percentage: number;
   date: string;
 }
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  displayName?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+export interface UserProgressState {
+  userId: string;
+  lastCompletedStepId: string;
+  lastCompletedModuleId?: string;
+  completionPercentage: number;
+  completedLessonIds: string[];
+  completedQuizIds: string[];
+  customDataJson?: string;
+  updatedAt?: any;
+}

@@ -13,6 +13,7 @@ import { SatelliteTracker } from './SatelliteTracker';
 import { MaterialsExplorer } from './MaterialsExplorer';
 import { SciencePromptLibrary } from './SciencePromptLibrary';
 import { DialectScienceArchive } from './DialectScienceArchive';
+import { PeriodicTableQuiz } from './PeriodicTableQuiz';
 import { sciFiAudio } from './SoundEffects';
 
 const SYSTEM_INSTRUCTION = `
@@ -36,7 +37,7 @@ Constraints:
 `;
 
 export const ScienceLab: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'orbital' | 'materials' | 'prompts' | 'dialects' | 'terminal'>('orbital');
+  const [activeTab, setActiveTab] = useState<'orbital' | 'materials' | 'quiz' | 'prompts' | 'dialects' | 'terminal'>('orbital');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -192,6 +193,18 @@ export const ScienceLab: React.FC = () => {
           </button>
 
           <button
+            onClick={() => { sciFiAudio.playClick(); setActiveTab('quiz'); }}
+            className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+              activeTab === 'quiz'
+                ? 'bg-emerald-400 text-black shadow-lg shadow-emerald-400/20'
+                : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            <Atom className="w-4 h-4" />
+            <span>PERIODIC TABLE QUIZ</span>
+          </button>
+
+          <button
             onClick={() => { sciFiAudio.playClick(); setActiveTab('prompts'); }}
             className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
               activeTab === 'prompts'
@@ -257,7 +270,7 @@ export const ScienceLab: React.FC = () => {
               <MaterialsExplorer onAskAiAboutMaterial={handleAskAiAboutMaterial} />
 
               <div className="bg-[#0b0f17] border border-slate-800 rounded-3xl p-6 space-y-4 shadow-2xl">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
                       <Atom className="w-6 h-6" />
@@ -271,12 +284,32 @@ export const ScienceLab: React.FC = () => {
                       </p>
                     </div>
                   </div>
+
+                  <button
+                    onClick={() => { sciFiAudio.playClick(); setActiveTab('quiz'); }}
+                    className="px-4 py-2 rounded-xl bg-emerald-400/10 border border-emerald-400/40 text-emerald-400 hover:bg-emerald-400 hover:text-black font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    <Atom className="w-4 h-4" />
+                    <span>TAKE PERIODIC QUIZ</span>
+                  </button>
                 </div>
 
                 <div className="p-2 overflow-x-auto">
                   <PeriodicTable onSelectElement={onSelectElement} />
                 </div>
               </div>
+            </motion.div>
+          )}
+
+          {/* TAB 3: PERIODIC TABLE QUIZ */}
+          {activeTab === 'quiz' && (
+            <motion.div
+              key="quiz"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <PeriodicTableQuiz />
             </motion.div>
           )}
 

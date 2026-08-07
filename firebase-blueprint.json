@@ -1,0 +1,39 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profiles",
+      "description": "User account profiles",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "email"]
+    },
+    "user_progress": {
+      "title": "User Progress",
+      "description": "User lesson and quiz progress tracking",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "lastCompletedStepId": { "type": "string" },
+        "lastCompletedModuleId": { "type": "string" },
+        "completionPercentage": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "customDataJson": { "type": "string" },
+        "completedLessonIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "completedQuizIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["userId"]
+    }
+  }
+}
