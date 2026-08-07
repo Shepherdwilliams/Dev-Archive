@@ -61,12 +61,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     } catch (err: any) {
       console.error('Auth error:', err);
       let cleanMessage = err.message || 'Authentication failed.';
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
-        cleanMessage = 'Invalid email or password. Please verify and retry.';
+      if (err.code === 'auth/network-request-failed') {
+        cleanMessage = 'Network connection to Firebase was restricted. This occurs when running inside an embedded iframe preview, or if ad/privacy blockers block Google Identity services. Please open the app in a new tab or disable ad-blockers.';
+      } else if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+        cleanMessage = 'Invalid email or password. Please check your credentials and try again.';
       } else if (err.code === 'auth/email-already-in-use') {
-        cleanMessage = 'An account with this email already exists. Try logging in instead.';
+        cleanMessage = 'An account with this email already exists. Switch to Sign In to log in.';
       } else if (err.code === 'auth/weak-password') {
         cleanMessage = 'Password should be at least 6 characters.';
+      } else if (err.code === 'auth/popup-blocked') {
+        cleanMessage = 'Google Sign-In popup was blocked by your browser. Please allow popups or use email sign-in.';
       }
       setError(cleanMessage);
     } finally {
@@ -88,7 +92,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }, 1000);
     } catch (err: any) {
       console.error('Google Sign-In Error:', err);
-      setError(err.message || 'Google sign-in failed.');
+      let cleanMessage = err.message || 'Google sign-in failed.';
+      if (err.code === 'auth/network-request-failed') {
+        cleanMessage = 'Network connection restricted. Embedded preview iframes block cross-origin authentication requests. Click "Open in New Tab" below to sign in directly.';
+      } else if (err.code === 'auth/popup-blocked') {
+        cleanMessage = 'Popup window was blocked by your browser settings. Please allow popups or open in a new tab.';
+      } else if (err.code === 'auth/unauthorized-domain') {
+        cleanMessage = 'This domain needs to be added to Authorized Domains in Firebase Console. You can also sign in using Email & Password.';
+      }
+      setError(cleanMessage);
     } finally {
       setLoading(false);
     }
@@ -167,9 +179,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           /* Sign In / Sign Up Form */
           <div className="space-y-5">
             {error && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{error}</span>
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+                {error.includes('iframe') || error.includes('Network') ? (
+                  <button
+                    type="button"
+                    onClick={() => window.open(window.location.href, '_blank')}
+                    className="w-full py-1.5 px-3 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-white rounded-lg font-bold text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <span>Open App in New Tab ↗</span>
+                  </button>
+                ) : null}
               </div>
             )}
 

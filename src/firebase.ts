@@ -49,22 +49,31 @@ export interface UserProgressState {
  * Ensures user profile exists in Firestore upon authentication
  */
 export async function syncUserProfile(user: User): Promise<UserProfile> {
-  const userRef = doc(db, 'users', user.uid);
-  const snap = await getDoc(userRef);
+  try {
+    const userRef = doc(db, 'users', user.uid);
+    const snap = await getDoc(userRef);
 
-  if (!snap.exists()) {
-    const newProfile: UserProfile = {
+    if (!snap.exists()) {
+      const newProfile: UserProfile = {
+        id: user.uid,
+        email: user.email || '',
+        displayName: user.displayName || user.email?.split('@')[0] || 'Researcher',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      await setDoc(userRef, newProfile);
+      return newProfile;
+    }
+
+    return snap.data() as UserProfile;
+  } catch (err) {
+    console.warn('Sync profile fallback triggered:', err);
+    return {
       id: user.uid,
       email: user.email || '',
-      displayName: user.displayName || user.email?.split('@')[0] || 'Researcher',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      displayName: user.displayName || user.email?.split('@')[0] || 'Researcher'
     };
-    await setDoc(userRef, newProfile);
-    return newProfile;
   }
-
-  return snap.data() as UserProfile;
 }
 
 /**
