@@ -39,6 +39,13 @@ export const Footer: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-brand-light-gray/60">
           <p>&copy; {new Date().getFullYear()} Development Archive (developmentarchive.net). All rights reserved.</p>
           <div className="flex items-center space-x-4">
+            <a 
+              href="mailto:support@developmentarchive.net" 
+              className="text-slate-400 hover:text-brand-green transition-colors underline decoration-dotted"
+            >
+              support@developmentarchive.net
+            </a>
+            <span>•</span>
             <span className="text-brand-green">ZPERIOD.APP INTEGRATED</span>
             <span>•</span>
             <span>OPEN PEDAGOGY ENGINE</span>
