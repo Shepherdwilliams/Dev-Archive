@@ -94,9 +94,16 @@ export async function fetchUserProgress(userId: string): Promise<UserProgressSta
 
 /**
  * Saves or updates user progress state in Firestore
+ * Enforces client-side authorization check before dispatching write
  */
 export async function saveUserProgress(progress: Partial<UserProgressState> & { userId: string }): Promise<void> {
   try {
+    const currentUid = auth.currentUser?.uid;
+    if (!currentUid || currentUid !== progress.userId) {
+      console.warn('Security guard: User is not authenticated or userId does not match active session.');
+      return;
+    }
+
     const progressRef = doc(db, 'user_progress', progress.userId);
     const payload = {
       ...progress,
@@ -105,6 +112,30 @@ export async function saveUserProgress(progress: Partial<UserProgressState> & { 
     await setDoc(progressRef, payload, { merge: true });
   } catch (err) {
     console.error('Error saving user progress:', err);
+  }
+}
+
+/**
+ * Securely signs out the user and clears any sensitive local session artifacts
+ */
+export async function signOutUser(): Promise<void> {
+  try {
+    await firebaseSignOut(auth);
+  } catch (err) {
+    console.error('Sign out error:', err);
+  }
+}
+
+/**
+ * Retrieves the active user's Firebase ID token to authorize administrative and mutating backend API calls.
+ */
+export async function getAuthToken(): Promise<string | null> {
+  if (!auth.currentUser) return null;
+  try {
+    return await auth.currentUser.getIdToken();
+  } catch (err) {
+    console.error('Error getting auth token:', err);
+    return null;
   }
 }
 

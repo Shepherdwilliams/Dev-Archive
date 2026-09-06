@@ -105,6 +105,8 @@ const App: React.FC = () => {
         setCurrentUser(null);
         setUserProfile(null);
         setSavedProgressState(null);
+        // Clear active session progress so it never leaks across accounts on shared computers
+        setCompletedLessons(new Set());
       }
     });
 

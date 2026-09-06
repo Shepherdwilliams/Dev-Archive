@@ -34,6 +34,34 @@
         }
       },
       "required": ["userId"]
+    },
+    "site_config": {
+      "title": "Site Configuration",
+      "description": "Owner managed site settings, announcements, and feature toggles",
+      "type": "object",
+      "properties": {
+        "tickerNotice": { "type": "string" },
+        "broadcastActive": { "type": "boolean" },
+        "broadcastMessage": { "type": "string" },
+        "aiChatEnabled": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string" }
+      }
+    },
+    "articles": {
+      "title": "Published STEM News Articles",
+      "description": "Accredited daily articles curated and published by the site owner",
+      "type": "object",
+      "properties": {
+        "headline": { "type": "string" },
+        "deck": { "type": "string" },
+        "discipline": { "type": "string" },
+        "content": { "type": "string" },
+        "citations": { "type": "array" },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "publishedBy": { "type": "string" }
+      },
+      "required": ["headline", "content"]
     }
   }
 }

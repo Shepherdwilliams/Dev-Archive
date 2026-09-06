@@ -29,7 +29,8 @@ import {
   Maximize2,
   Minimize2,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
+  Trash2
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
@@ -38,6 +39,9 @@ import { StemArticle, StemDiscipline, Citation } from '../types';
 import { INITIAL_STEM_ARTICLES } from '../data/stemArticles';
 import { sciFiAudio } from './SoundEffects';
 import { StemArticleShare } from './StemArticleShare';
+import { SafeMarkdownLink, isSiteOwner, OWNER_EMAIL } from '../src/security';
+import { getAuthToken } from '../src/firebase';
+import { User } from 'firebase/auth';
 
 const LANGUAGES = [
   { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -51,7 +55,8 @@ const LANGUAGES = [
   { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' }
 ];
 
-export const StemNews: React.FC = () => {
+export const StemNews: React.FC<{ currentUser?: User | null }> = ({ currentUser }) => {
+  const isOwner = isSiteOwner(currentUser?.email);
   const [articles, setArticles] = useState<StemArticle[]>(INITIAL_STEM_ARTICLES);
   const [selectedDiscipline, setSelectedDiscipline] = useState<StemDiscipline | 'All'>('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,6 +103,7 @@ export const StemNews: React.FC = () => {
   const [genTopicPrompt, setGenTopicPrompt] = useState<string>('');
   const [showGenModal, setShowGenModal] = useState<boolean>(false);
   const [showSourcePolicy, setShowSourcePolicy] = useState<boolean>(false);
+  const [genError, setGenError] = useState<string | null>(null);
 
   // Fact check / Verification assistant state
   const [factCheckQuery, setFactCheckQuery] = useState<string>('');
@@ -259,19 +265,40 @@ export const StemNews: React.FC = () => {
     }
   };
 
-  // Generate Fresh Article
+  // Generate Fresh Article (Restricted to Verified Site Owner)
   const handleGenerateArticle = async () => {
+    if (!isOwner) {
+      setGenError('Unauthorized: Daily dispatch generation is restricted exclusively to the verified site owner.');
+      return;
+    }
+
     setIsGenerating(true);
+    setGenError(null);
     sciFiAudio.playClick();
     try {
+      const idToken = await getAuthToken();
+      if (!idToken) {
+        setGenError('Authentication required: Please sign in with the site owner account.');
+        setIsGenerating(false);
+        return;
+      }
+
       const res = await fetch('/api/news/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
         body: JSON.stringify({
           discipline: genDiscipline,
           topicFocus: genTopicPrompt.trim() || undefined
         })
       });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Server responded with error status ${res.status}`);
+      }
 
       const data = await res.json();
       if (data.article) {
@@ -286,11 +313,29 @@ export const StemNews: React.FC = () => {
         setSelectedLanguage('en');
         setShowGenModal(false);
         setGenTopicPrompt('');
+        sciFiAudio.playSuccess();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Generation error:', err);
+      setGenError(err?.message || 'Error occurred while contacting editorial generator service.');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  // Owner action to delete/remove an article from the live stream
+  const handleDeleteArticle = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!isOwner) return;
+    sciFiAudio.playClick();
+    if (window.confirm("Are you sure you want to remove this dispatch from the live publication feed?")) {
+      setArticles(prev => {
+        const next = prev.filter(a => a.id !== id);
+        if (activeArticleId === id && next.length > 0) {
+          setActiveArticleId(next[0].id);
+        }
+        return next;
+      });
     }
   };
 
@@ -382,13 +427,22 @@ export const StemNews: React.FC = () => {
 
         {/* Global Journal Controls Bar */}
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-          <button
-            onClick={() => { sciFiAudio.playClick(); setShowGenModal(true); }}
-            className="px-4 py-2 rounded-xl bg-brand-green hover:bg-brand-green-dark text-brand-black font-mono font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-brand-green/20"
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span>Generate Today's Dispatch</span>
-          </button>
+          {isOwner ? (
+            <button
+              onClick={() => { sciFiAudio.playClick(); setShowGenModal(true); }}
+              className="px-4 py-2 rounded-xl bg-brand-green hover:bg-brand-green-dark text-brand-black font-mono font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-brand-green/20"
+              title="Editorial Dispatch Generation (Owner Only)"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Generate Today's Dispatch</span>
+              <span className="bg-brand-black text-brand-green px-1.5 py-0.5 rounded text-[10px] font-mono">OWNER</span>
+            </button>
+          ) : (
+            <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-400 text-xs font-mono flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-brand-green animate-pulse" />
+              <span>Accredited Dispatches • Curated Daily</span>
+            </div>
+          )}
 
           <button
             onClick={() => { sciFiAudio.playClick(); setShowSourcePolicy(prev => !prev); }}
@@ -869,7 +923,8 @@ export const StemNews: React.FC = () => {
                       <pre className="bg-slate-950 border border-slate-800 rounded-xl p-4 overflow-x-auto my-4 text-xs font-mono text-slate-200">
                         {children}
                       </pre>
-                    )
+                    ),
+                    a: SafeMarkdownLink
                   }}
                 >
                   {currentDisplayContent.content}
@@ -1073,6 +1128,7 @@ export const StemNews: React.FC = () => {
                       strong: ({ children }) => <strong className="font-bold text-white">{children}</strong>,
                       em: ({ children }) => <em className="italic text-slate-100">{children}</em>,
                       blockquote: ({ children }) => <blockquote className="border-l-4 border-brand-green bg-slate-900/60 p-4 rounded-r-xl my-4 text-slate-300 italic">{children}</blockquote>,
+                      a: SafeMarkdownLink
                     }}
                   >
                     {currentDisplayContent.content}

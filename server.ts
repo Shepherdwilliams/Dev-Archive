@@ -31,8 +31,235 @@ async function startServer() {
     next();
   });
 
+  // In-Memory Rate Limiting to prevent API exhaustion / Denial of Wallet
+  interface RateLimitRecord {
+    count: number;
+    resetTime: number;
+  }
+  const rateLimitMap = new Map<string, RateLimitRecord>();
+
+  // Cleanup stale IP entries periodically every 5 minutes
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, record] of rateLimitMap.entries()) {
+      if (now > record.resetTime) {
+        rateLimitMap.delete(ip);
+      }
+    }
+  }, 5 * 60 * 1000).unref();
+
+  const aiRateLimiter = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // Extract IP safely from proxy headers or socket
+    const forwarded = req.headers['x-forwarded-for'];
+    const clientIp = typeof forwarded === 'string'
+      ? forwarded.split(',')[0].trim()
+      : req.ip || req.socket.remoteAddress || 'unknown-client';
+
+    const windowMs = 60 * 1000; // 1 minute sliding window
+    const maxRequests = 30; // Max 30 requests per minute per IP
+    const now = Date.now();
+    const record = rateLimitMap.get(clientIp);
+
+    if (!record || now > record.resetTime) {
+      rateLimitMap.set(clientIp, {
+        count: 1,
+        resetTime: now + windowMs,
+      });
+      res.setHeader('X-RateLimit-Limit', maxRequests);
+      res.setHeader('X-RateLimit-Remaining', maxRequests - 1);
+      res.setHeader('X-RateLimit-Reset', Math.ceil((now + windowMs) / 1000));
+      return next();
+    }
+
+    if (record.count >= maxRequests) {
+      const retryAfterSec = Math.max(1, Math.ceil((record.resetTime - now) / 1000));
+      res.setHeader('Retry-After', retryAfterSec);
+      res.setHeader('X-RateLimit-Limit', maxRequests);
+      res.setHeader('X-RateLimit-Remaining', 0);
+      res.setHeader('X-RateLimit-Reset', Math.ceil(record.resetTime / 1000));
+      return res.status(429).json({
+        error: "Rate limit exceeded (30 requests/minute). Please wait a moment before sending another AI query.",
+        retryAfter: retryAfterSec
+      });
+    }
+
+    record.count += 1;
+    res.setHeader('X-RateLimit-Limit', maxRequests);
+    res.setHeader('X-RateLimit-Remaining', Math.max(0, maxRequests - record.count));
+    res.setHeader('X-RateLimit-Reset', Math.ceil(record.resetTime / 1000));
+    return next();
+  };
+
+  // Apply rate limiter to all /api routes
+  app.use("/api", aiRateLimiter);
+
+  // Canonical Site Owner configuration
+  const OWNER_EMAIL = (process.env.ADMIN_EMAIL || "wordswithoutwallspublishing@gmail.com").toLowerCase();
+
+  // Dynamic Site Configuration (owner controlled)
+  interface SiteConfigState {
+    tickerNotice: string;
+    broadcastActive: boolean;
+    broadcastMessage: string;
+    aiChatEnabled: boolean;
+    lastUpdated: string;
+    updatedBy: string;
+  }
+
+  let siteConfig: SiteConfigState = {
+    tickerNotice: "⚡ Gemini 1.5 Pro Operational • 🤖 10 Autonomous Agents Online • 🧪 24/7 Zperiod Science Engine Active",
+    broadcastActive: false,
+    broadcastMessage: "",
+    aiChatEnabled: true,
+    lastUpdated: new Date().toISOString(),
+    updatedBy: "system"
+  };
+
+  /**
+   * Server-side Owner Authentication & Authorization Middleware
+   * Cryptographically validates Firebase ID Token against Google Identity Toolkit
+   * and verifies caller matches the canonical site owner email.
+   */
+  async function authenticateOwner(req: express.Request, res: express.Response, next: express.NextFunction) {
+    // 1. Optional Secret Admin Key Header (for automated operations or fallback)
+    const adminKey = req.headers["x-admin-key"];
+    if (process.env.ADMIN_SECRET_KEY && adminKey && adminKey === process.env.ADMIN_SECRET_KEY) {
+      (req as any).ownerEmail = OWNER_EMAIL;
+      return next();
+    }
+
+    // 2. Extract Bearer token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        error: "Authentication required. Only the site owner is authorized to perform this administrative action.",
+        code: "UNAUTHORIZED"
+      });
+    }
+
+    const idToken = authHeader.split(" ")[1];
+    if (!idToken) {
+      return res.status(401).json({
+        error: "Authentication token missing from Authorization header.",
+        code: "UNAUTHORIZED"
+      });
+    }
+
+    try {
+      const firebaseApiKey = process.env.FIREBASE_API_KEY || "AIzaSyD8sskOGSqPQCiZHWNSVGT0IW0QHdwI8wk";
+      const lookupUrl = `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseApiKey}`;
+
+      const lookupResponse = await fetch(lookupUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken })
+      });
+
+      if (!lookupResponse.ok) {
+        const errData: any = await lookupResponse.json().catch(() => ({}));
+        return res.status(401).json({
+          error: "Invalid or expired authentication credentials.",
+          code: "INVALID_CREDENTIALS",
+          details: errData?.error?.message
+        });
+      }
+
+      const data: any = await lookupResponse.json();
+      const user = data.users?.[0];
+      if (!user || !user.email) {
+        return res.status(401).json({
+          error: "Authenticated user does not have a verified email.",
+          code: "NO_EMAIL"
+        });
+      }
+
+      const callerEmail = user.email.toLowerCase();
+      if (callerEmail !== OWNER_EMAIL) {
+        return res.status(403).json({
+          error: `Access Denied: Account '${callerEmail}' is not authorized. This feature is restricted to the site owner (${OWNER_EMAIL}).`,
+          code: "FORBIDDEN"
+        });
+      }
+
+      (req as any).ownerEmail = callerEmail;
+      next();
+    } catch (err: any) {
+      console.error("Owner Authentication Verification Error:", err?.message || err);
+      return res.status(500).json({
+        error: "Server authentication error verifying administrator credentials.",
+        code: "AUTH_VERIFY_FAILURE"
+      });
+    }
+  }
+
+  // Public Endpoint: Read Current Site Configuration and Broadcast
+  app.get("/api/site-config", (req, res) => {
+    res.json(siteConfig);
+  });
+
+  // Admin-Only Endpoint: Update Site Configuration & Broadcasts
+  app.post("/api/admin/site-config", authenticateOwner, (req, res) => {
+    const { tickerNotice, broadcastActive, broadcastMessage, aiChatEnabled } = req.body;
+
+    if (typeof tickerNotice === "string") {
+      siteConfig.tickerNotice = tickerNotice.trim().substring(0, 300);
+    }
+    if (typeof broadcastActive === "boolean") {
+      siteConfig.broadcastActive = broadcastActive;
+    }
+    if (typeof broadcastMessage === "string") {
+      siteConfig.broadcastMessage = broadcastMessage.trim().substring(0, 500);
+    }
+    if (typeof aiChatEnabled === "boolean") {
+      siteConfig.aiChatEnabled = aiChatEnabled;
+    }
+
+    siteConfig.lastUpdated = new Date().toISOString();
+    siteConfig.updatedBy = (req as any).ownerEmail || OWNER_EMAIL;
+
+    res.json({
+      success: true,
+      message: "Site configuration updated successfully.",
+      config: siteConfig
+    });
+  });
+
+  // Admin-Only Endpoint: System Telemetry and Security Health
+  app.get("/api/admin/status", authenticateOwner, (req, res) => {
+    res.json({
+      status: "healthy",
+      serverUptimeSeconds: Math.floor(process.uptime()),
+      nodeVersion: process.version,
+      ownerEmail: OWNER_EMAIL,
+      authenticatedCaller: (req as any).ownerEmail,
+      rateLimiter: {
+        activeTrackedIps: rateLimitMap.size,
+        windowMs: 60000,
+        maxPerMinute: 30
+      },
+      siteConfig,
+      systemMemory: process.memoryUsage()
+    });
+  });
+
+  // Admin-Only Endpoint: Reset In-Memory Rate Limit Tracking Table
+  app.post("/api/admin/reset-rate-limits", authenticateOwner, (req, res) => {
+    const previousCount = rateLimitMap.size;
+    rateLimitMap.clear();
+    res.json({
+      success: true,
+      message: `Cleared ${previousCount} rate limit tracker entries.`
+    });
+  });
+
   // AI Chat Proxy Endpoint with Strict Input Validation
   app.post("/api/ai", async (req, res) => {
+    if (!siteConfig.aiChatEnabled) {
+      return res.status(503).json({
+        error: "AI Chat is temporarily disabled by the site administrator."
+      });
+    }
+
     const { message, systemInstruction, history } = req.body;
 
     // 1. Validate prompt message
@@ -104,8 +331,8 @@ async function startServer() {
     }
   });
 
-  // Dedicated STEM News Generator Endpoint (Enforces Accredited Sourcing & Verification)
-  app.post("/api/news/generate", async (req, res) => {
+  // Dedicated STEM News Generator Endpoint (Restricted to Authorized Site Owner)
+  app.post("/api/news/generate", authenticateOwner, async (req, res) => {
     const { discipline, topicFocus } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
 

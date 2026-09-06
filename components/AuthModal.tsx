@@ -41,16 +41,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     sciFiAudio.playClick();
     setError(null);
     setSuccessMsg(null);
+
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setError('Please provide a valid email address.');
+      return;
+    }
+
+    if (mode === 'signup' && password.length < 8) {
+      setError('For your security, passwords must be at least 8 characters long.');
+      return;
+    }
+
     setLoading(true);
 
     try {
       if (mode === 'signup') {
-        const res = await createUserWithEmailAndPassword(auth, email, password);
+        const res = await createUserWithEmailAndPassword(auth, cleanEmail, password);
         await syncUserProfile(res.user);
         sciFiAudio.playSuccess();
         setSuccessMsg('Account created successfully!');
       } else {
-        const res = await signInWithEmailAndPassword(auth, email, password);
+        const res = await signInWithEmailAndPassword(auth, cleanEmail, password);
         await syncUserProfile(res.user);
         sciFiAudio.playSuccess();
         setSuccessMsg('Signed in successfully!');
@@ -68,7 +80,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       } else if (err.code === 'auth/email-already-in-use') {
         cleanMessage = 'An account with this email already exists. Switch to Sign In to log in.';
       } else if (err.code === 'auth/weak-password') {
-        cleanMessage = 'Password should be at least 6 characters.';
+        cleanMessage = 'Password must be at least 8 characters.';
       } else if (err.code === 'auth/popup-blocked') {
         cleanMessage = 'Google Sign-In popup was blocked by your browser. Please allow popups or use email sign-in.';
       }

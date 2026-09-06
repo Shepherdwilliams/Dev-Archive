@@ -15,6 +15,7 @@ import { SciencePromptLibrary } from './SciencePromptLibrary';
 import { DialectScienceArchive } from './DialectScienceArchive';
 import { PeriodicTableQuiz } from './PeriodicTableQuiz';
 import { sciFiAudio } from './SoundEffects';
+import { SafeMarkdownLink } from '../src/security';
 
 const SYSTEM_INSTRUCTION = `
 You are the "Science AI Specialist" for The Development Archive (developmentarchive.net). Your mission is to provide expert-level pedagogical support for chemistry, physics, and STEM subjects, specifically using the Zperiod (zperiod.app) interactive periodic table as your primary data reference.
@@ -449,7 +450,11 @@ export const ScienceLab: React.FC = () => {
                             : 'bg-slate-950 border-slate-800 text-slate-200 font-sans'
                         }`}>
                           <div className="prose prose-sm prose-invert max-w-none">
-                            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                            <ReactMarkdown 
+                              remarkPlugins={[remarkMath]} 
+                              rehypePlugins={[rehypeKatex]}
+                              components={{ a: SafeMarkdownLink }}
+                            >
                               {msg.text}
                             </ReactMarkdown>
                           </div>
