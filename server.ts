@@ -293,9 +293,18 @@ NON-NEGOTIABLE SOURCING RULES:
     });
     app.use(vite.middlewares);
   } else {
-    // Serve static files in production
+    // Serve static files in production with optimized media and asset caching
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, {
+      maxAge: '7d',
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache');
+        } else if (/\.(mp4|webm|webp|png|jpg|jpeg|svg|woff2|woff|css|js)$/.test(filePath)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      }
+    }));
     app.get("*all", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });

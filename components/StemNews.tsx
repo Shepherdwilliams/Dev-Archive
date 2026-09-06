@@ -37,6 +37,7 @@ import rehypeKatex from 'rehype-katex';
 import { StemArticle, StemDiscipline, Citation } from '../types';
 import { INITIAL_STEM_ARTICLES } from '../data/stemArticles';
 import { sciFiAudio } from './SoundEffects';
+import { StemArticleShare } from './StemArticleShare';
 
 const LANGUAGES = [
   { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -54,7 +55,26 @@ export const StemNews: React.FC = () => {
   const [articles, setArticles] = useState<StemArticle[]>(INITIAL_STEM_ARTICLES);
   const [selectedDiscipline, setSelectedDiscipline] = useState<StemDiscipline | 'All'>('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeArticleId, setActiveArticleId] = useState<string>(INITIAL_STEM_ARTICLES[0].id);
+  
+  // Read article from URL param or hash permalink if available
+  const [activeArticleId, setActiveArticleId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const articleParam = params.get('article');
+        if (articleParam && INITIAL_STEM_ARTICLES.some(a => a.id === articleParam)) {
+          return articleParam;
+        }
+        const hash = window.location.hash.replace('#dispatch-', '');
+        if (hash && INITIAL_STEM_ARTICLES.some(a => a.id === hash)) {
+          return hash;
+        }
+      } catch {
+        // Fallback to default
+      }
+    }
+    return INITIAL_STEM_ARTICLES[0].id;
+  });
 
   // Mobile navigation tab: reader (default), list, factcheck
   const [mobileTab, setMobileTab] = useState<'reader' | 'list' | 'factcheck'>('reader');
@@ -147,6 +167,16 @@ export const StemNews: React.FC = () => {
     setActiveArticleId(id);
     setSelectedLanguage('en');
     setMobileTab('reader');
+    if (typeof window !== 'undefined' && window.history?.replaceState) {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('article', id);
+        url.hash = `dispatch-${id}`;
+        window.history.replaceState(null, '', url.toString());
+      } catch {
+        // Safe fallback
+      }
+    }
     if (isSpeaking) {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
@@ -531,17 +561,20 @@ export const StemNews: React.FC = () => {
                     </p>
 
                     <div className="pt-2 flex items-center justify-between border-t border-slate-800/60 text-[11px] font-mono">
-                      <span className="text-slate-500 truncate max-w-[140px]">🤖 {art.aiFocusTag}</span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSelectArticle(art.id);
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-brand-green/20 hover:bg-brand-green text-brand-green hover:text-brand-black text-xs font-mono font-bold flex items-center gap-1 transition-all cursor-pointer"
-                      >
-                        <span>Read Article</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </button>
+                      <span className="text-slate-500 truncate max-w-[120px]">🤖 {art.aiFocusTag}</span>
+                      <div className="flex items-center gap-1.5">
+                        <StemArticleShare article={art} variant="inline" />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectArticle(art.id);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-brand-green/20 hover:bg-brand-green text-brand-green hover:text-brand-black text-xs font-mono font-bold flex items-center gap-1 transition-all cursor-pointer"
+                        >
+                          <span>Read</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 );
@@ -738,12 +771,15 @@ export const StemNews: React.FC = () => {
                 {currentDisplayContent.deck}
               </p>
 
-              <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-slate-400 pt-1">
-                <span>By {activeArticle.author}</span>
-                <span>•</span>
-                <span>Region: {activeArticle.regionFocus}</span>
-                <span>•</span>
-                <span className="text-brand-green">Focus: {activeArticle.aiFocusTag}</span>
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/60 text-xs font-mono text-slate-400">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span>By {activeArticle.author}</span>
+                  <span>•</span>
+                  <span>Region: {activeArticle.regionFocus}</span>
+                  <span>•</span>
+                  <span className="text-brand-green">Focus: {activeArticle.aiFocusTag}</span>
+                </div>
+                <StemArticleShare article={activeArticle} variant="compact" />
               </div>
             </div>
 
@@ -932,6 +968,9 @@ export const StemNews: React.FC = () => {
               </div>
             </div>
 
+            {/* Social Media Sharing Callout Bar */}
+            <StemArticleShare article={activeArticle} variant="full" />
+
             {/* Bottom Article Pager: Prev & Next Article Navigation */}
             <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-slate-800/80">
               {prevArticle ? (
@@ -980,7 +1019,9 @@ export const StemNews: React.FC = () => {
                   <span className="text-xs font-mono text-slate-400">{activeArticle.date}</span>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <StemArticleShare article={activeArticle} variant="compact" />
+
                   {/* Font Size Adjuster */}
                   <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-0.5">
                     <button
