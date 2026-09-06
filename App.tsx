@@ -13,6 +13,7 @@ import { BotsAndAgents } from './components/BotsAndAgents';
 import { Services } from './components/Services';
 import { Store } from './components/Store';
 import { Contact } from './components/Contact';
+import { StemNews } from './components/StemNews';
 import { Footer } from './components/Footer';
 import { VideoIntro } from './components/VideoIntro';
 import { ScrollToTop } from './components/ScrollToTop';
@@ -30,7 +31,7 @@ import {
   User
 } from './src/firebase';
 
-export type View = 'home' | 'modules' | 'lesson' | 'agents' | 'services' | 'quiz' | 'glossary' | 'chat' | 'science' | 'store' | 'contact';
+export type View = 'home' | 'news' | 'modules' | 'lesson' | 'agents' | 'services' | 'quiz' | 'glossary' | 'chat' | 'science' | 'store' | 'contact';
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('home');
@@ -168,6 +169,27 @@ const App: React.FC = () => {
     }
   };
 
+  const handleSelectTopic = (step: string) => {
+    if (step === '06') {
+      setView('agents');
+      return;
+    }
+    if (step === '07') {
+      setView('quiz');
+      return;
+    }
+    if (step === '08') {
+      setView('services');
+      return;
+    }
+    const stepIndex = parseInt(step, 10) - 1;
+    if (courseModules[stepIndex]?.lessons?.[0]) {
+      handleSelectLesson(courseModules[stepIndex].lessons[0]);
+    } else {
+      setView('modules');
+    }
+  };
+
   const handleMarkComplete = (lessonId: string) => {
     setCompletedLessons(prev => {
       const next = new Set(prev);
@@ -206,6 +228,8 @@ const App: React.FC = () => {
         >
           {(() => {
             switch (view) {
+              case 'news':
+                return <StemNews />;
               case 'modules':
                 return <CourseModules onSelectLesson={handleSelectLesson} completedLessons={completedLessons} />;
               case 'agents':
@@ -235,8 +259,9 @@ const App: React.FC = () => {
                       onInPersonServices={() => setView('services')}
                       onExploreAgents={() => setView('agents')}
                       onPlayIntro={handleReplayIntro}
+                      onReadNews={() => setView('news')}
                     />
-                    <CurriculumGrid />
+                    <CurriculumGrid onSelectTopic={handleSelectTopic} />
                   </>
                 );
             }

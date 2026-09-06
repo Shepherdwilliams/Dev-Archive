@@ -66,3 +66,40 @@ export interface UserProgressState {
   customDataJson?: string;
   updatedAt?: any;
 }
+
+export type StemDiscipline = 'Science' | 'Technology' | 'Engineering' | 'Mathematics';
+
+export interface Citation {
+  id: string;
+  publication: string;
+  title: string;
+  institutionOrAuthors?: string;
+  doiOrUrl?: string;
+  date: string;
+  region: string;
+  peerReviewed: boolean;
+}
+
+export interface ConceptExplainer {
+  term: string;
+  definition: string;
+  aiContext: string;
+}
+
+export interface StemArticle {
+  id: string;
+  date: string;
+  discipline: StemDiscipline;
+  headline: string;
+  deck: string;
+  readTime: string;
+  aiFocusTag: string;
+  author: string;
+  content: string;
+  keyDataPoints: { metric: string; value: string; context: string }[];
+  concepts: ConceptExplainer[];
+  citations: Citation[];
+  regionFocus: string;
+  verificationStatus: 'Verified Accredited' | 'Peer-Reviewed Journal' | 'Institutional Publication';
+}
+

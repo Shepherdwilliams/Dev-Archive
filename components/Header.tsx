@@ -115,6 +115,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center space-x-1 border border-brand-border/80 bg-brand-gray-dark/60 p-1 rounded-lg">
               <NavLink view="home" currentView={currentView} setView={setView}>Home</NavLink>
+              <NavLink view="news" currentView={currentView} setView={setView}>📰 STEM News</NavLink>
               <NavLink view="modules" currentView={currentView} setView={setView}>Modules</NavLink>
               <NavLink view="agents" currentView={currentView} setView={setView}>🤖 Bots & Agents</NavLink>
               <NavLink view="services" currentView={currentView} setView={setView}>💼 Services</NavLink>
@@ -188,6 +189,12 @@ export const Header: React.FC<HeaderProps> = ({
                 className={`px-2.5 py-1 rounded text-xs font-bold whitespace-nowrap ${currentView === 'home' ? 'bg-brand-green text-brand-black' : 'text-brand-light-gray'}`}
               >
                 Home
+              </button>
+              <button
+                onClick={() => { sciFiAudio.playClick(); setView('news'); }}
+                className={`px-2.5 py-1 rounded text-xs font-bold whitespace-nowrap ${currentView === 'news' ? 'bg-brand-green text-brand-black font-black' : 'text-brand-green border border-brand-green/40'}`}
+              >
+                📰 News
               </button>
               <button
                 onClick={() => { sciFiAudio.playClick(); setView('services'); }}

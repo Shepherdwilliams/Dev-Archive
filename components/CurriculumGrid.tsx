@@ -13,7 +13,11 @@ const curriculumTopics = [
   { step: '08', title: 'In-Person Classes & Formation', description: 'Schedule face-to-face 1-on-1 or group prompt engineering masterclasses and end-to-end in-person business formation consulting.', icon: '💼', tag: 'In-Person Services' },
 ];
 
-export const CurriculumGrid: React.FC = () => {
+interface CurriculumGridProps {
+  onSelectTopic?: (step: string) => void;
+}
+
+export const CurriculumGrid: React.FC<CurriculumGridProps> = ({ onSelectTopic }) => {
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -40,7 +44,7 @@ export const CurriculumGrid: React.FC = () => {
           Designed for Clarity & Depth
         </h2>
         <p className="text-brand-light-gray text-base sm:text-lg">
-          Each module provides interactive concepts, code patterns, real-world agent blueprints, and knowledge checkpoints.
+          Each module provides interactive concepts, code patterns, real-world agent blueprints, and knowledge checkpoints. Click any module to read its lessons.
         </p>
       </div>
 
@@ -55,8 +59,10 @@ export const CurriculumGrid: React.FC = () => {
           <motion.div 
             key={index} 
             variants={item}
-            whileHover={{ y: -6 }}
-            className="tech-card p-7 rounded-2xl flex flex-col justify-between group relative overflow-hidden"
+            whileHover={{ y: -6, scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => onSelectTopic && onSelectTopic(topic.step)}
+            className="tech-card p-7 rounded-2xl flex flex-col justify-between group relative overflow-hidden cursor-pointer hover:border-brand-green/70 transition-all shadow-lg"
           >
             {/* Top Bar inside Card */}
             <div className="flex items-center justify-between mb-6">
@@ -84,8 +90,8 @@ export const CurriculumGrid: React.FC = () => {
 
             {/* Bottom Accent line */}
             <div className="mt-6 pt-4 border-t border-brand-border/40 flex items-center justify-between text-xs font-mono text-brand-light-gray/60 group-hover:text-brand-green transition-colors">
-              <span>EXPLORE CONTENT</span>
-              <span className="transform group-hover:translate-x-1 transition-transform">→</span>
+              <span className="font-bold">START READING LESSONS</span>
+              <span className="transform group-hover:translate-x-1.5 transition-transform text-brand-green font-bold">→</span>
             </div>
           </motion.div>
         ))}

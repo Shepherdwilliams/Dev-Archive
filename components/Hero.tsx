@@ -7,9 +7,10 @@ interface HeroProps {
   onExploreAgents?: () => void;
   onInPersonServices?: () => void;
   onPlayIntro?: () => void;
+  onReadNews?: () => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onStartLearning, onExploreAgents, onInPersonServices, onPlayIntro }) => {
+export const Hero: React.FC<HeroProps> = ({ onStartLearning, onExploreAgents, onInPersonServices, onPlayIntro, onReadNews }) => {
   return (
     <section className="relative py-16 md:py-28 max-w-6xl mx-auto px-4 sm:px-6">
       {/* Background glow gradient accent */}
@@ -21,12 +22,22 @@ export const Hero: React.FC<HeroProps> = ({ onStartLearning, onExploreAgents, on
         transition={{ duration: 0.6, ease: "easeOut" }}
         className="text-center space-y-8"
       >
-        {/* Monospaced Eyebrow Tag */}
-        <div className="inline-flex items-center space-x-2">
+        {/* Monospaced Eyebrow Tag & Daily News Ticker */}
+        <div className="flex flex-wrap items-center justify-center gap-3">
           <span className="mono-badge">
             <span className="w-2 h-2 rounded-full bg-brand-green animate-pulse" />
             01. OPEN ARCHIVE // AI & BOT ENGINE 2026
           </span>
+          {onReadNews && (
+            <button
+              onClick={onReadNews}
+              className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-900/90 border border-brand-green/40 hover:border-brand-green text-xs font-mono text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm group"
+            >
+              <span className="text-brand-green font-bold">📰 Daily STEM Dispatch:</span>
+              <span className="truncate max-w-[200px] sm:max-w-xs text-slate-400 group-hover:text-slate-200">De Novo Protein Diffusion & Photonic AI</span>
+              <span className="text-brand-green font-bold">→</span>
+            </button>
+          )}
         </div>
 
         {/* High Contrast Display Heading */}

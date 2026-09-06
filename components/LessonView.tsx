@@ -47,6 +47,15 @@ export const LessonView: React.FC<LessonViewProps> = ({ lesson, onMarkComplete, 
     });
   };
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [lesson.id]);
+
+  const flatLessons = allModules.flatMap(m => m.lessons);
+  const currentIndex = flatLessons.findIndex(l => l.id === lesson.id);
+  const prevLesson = currentIndex > 0 ? flatLessons[currentIndex - 1] : null;
+  const nextLesson = currentIndex < flatLessons.length - 1 ? flatLessons[currentIndex + 1] : null;
+
   const renderContent = (content: string) => {
     return content.split('\n\n').map((paragraph, index) => {
       // Bold text support: **text**
@@ -135,12 +144,31 @@ export const LessonView: React.FC<LessonViewProps> = ({ lesson, onMarkComplete, 
         <div className="prose prose-invert max-w-none text-brand-light-gray">
             {renderContent(lesson.content)}
         </div>
-        <div className="mt-10 border-t border-brand-border pt-6">
+        <div className="mt-10 border-t border-brand-border pt-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            {prevLesson && (
+              <button
+                onClick={() => onSelectLesson(prevLesson)}
+                className="px-5 py-2.5 rounded-full bg-brand-gray-dark/80 hover:bg-brand-border border border-brand-border text-white text-sm font-semibold transition-all cursor-pointer flex items-center space-x-2"
+              >
+                <span>← Previous Lesson</span>
+              </button>
+            )}
+            {nextLesson && (
+              <button
+                onClick={() => onSelectLesson(nextLesson)}
+                className="px-5 py-2.5 rounded-full bg-brand-green/20 hover:bg-brand-green/30 border border-brand-green/40 text-brand-green text-sm font-semibold transition-all cursor-pointer flex items-center space-x-2"
+              >
+                <span>Next Lesson →</span>
+              </button>
+            )}
+          </div>
+
           <button
             onClick={() => onMarkComplete(lesson.id)}
-            className="w-full md:w-auto bg-brand-green text-brand-black font-bold py-3 px-8 rounded-full text-lg hover:bg-brand-green-dark transition-all duration-300 transform hover:scale-105"
+            className="w-full sm:w-auto bg-brand-green text-brand-black font-bold py-3 px-8 rounded-full text-base sm:text-lg hover:bg-brand-green-dark transition-all duration-300 transform hover:scale-105 cursor-pointer"
           >
-            Mark as Complete
+            Mark as Complete ✓
           </button>
         </div>
       </article>
