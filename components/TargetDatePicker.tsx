@@ -46,6 +46,13 @@ export const TargetDatePicker: React.FC<TargetDatePickerProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll into view when opened to prevent vertical clipping on small viewports
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [isOpen]);
+
   // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -173,7 +180,7 @@ export const TargetDatePicker: React.FC<TargetDatePickerProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-[10010] mt-2 left-0 right-0 sm:left-auto sm:right-0 w-full sm:w-[360px] bg-[#0d121d] border border-brand-border/90 rounded-2xl p-4 shadow-2xl backdrop-blur-xl text-white font-mono space-y-4"
+            className="absolute z-[10010] mt-2 left-0 right-0 w-full max-w-full bg-[#0d121d] border border-brand-border/90 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-xl text-white font-mono space-y-4 max-h-[min(480px,60vh)] overflow-y-auto overscroll-contain scrollbar-thin scrollbar-thumb-brand-green/30 scrollbar-track-transparent"
           >
             {/* Step Header */}
             <div className="flex items-center justify-between border-b border-brand-border/60 pb-3">

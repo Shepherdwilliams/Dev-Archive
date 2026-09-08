@@ -130,7 +130,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-        className="relative w-full max-w-md bg-[#0d121d] border border-brand-border/90 rounded-3xl p-6 sm:p-8 shadow-2xl font-mono text-white space-y-6 overflow-hidden"
+        className="relative w-full max-w-md bg-[#0d121d] border border-brand-border/90 rounded-3xl p-6 sm:p-8 shadow-2xl font-mono text-white space-y-6 max-h-[92vh] overflow-y-auto overscroll-contain"
       >
         {/* Background ambient glow */}
         <div className="absolute -top-24 -right-24 w-64 h-64 bg-brand-green/10 rounded-full blur-3xl pointer-events-none" />

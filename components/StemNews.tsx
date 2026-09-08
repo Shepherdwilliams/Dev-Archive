@@ -1159,7 +1159,7 @@ export const StemNews: React.FC<{ currentUser?: User | null }> = ({ currentUser 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="tech-card p-6 sm:p-8 rounded-3xl max-w-lg w-full space-y-6 border border-brand-green/50 shadow-2xl"
+              className="tech-card p-6 sm:p-8 rounded-3xl max-w-lg w-full space-y-6 border border-brand-green/50 shadow-2xl max-h-[92vh] overflow-y-auto overscroll-contain"
             >
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2">

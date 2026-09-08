@@ -62,6 +62,25 @@
         "publishedBy": { "type": "string" }
       },
       "required": ["headline", "content"]
+    },
+    "service_bookings": {
+      "title": "Service Bookings",
+      "description": "In-person class and consulting service booking registrations",
+      "type": "object",
+      "properties": {
+        "bookingId": { "type": "string" },
+        "service": { "type": "string" },
+        "clientName": { "type": "string" },
+        "clientEmail": { "type": "string" },
+        "clientPhone": { "type": "string" },
+        "location": { "type": "string" },
+        "preferredDate": { "type": "string" },
+        "groupSize": { "type": "string" },
+        "notes": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["bookingId", "service", "clientName", "clientEmail"]
     }
   }
 }

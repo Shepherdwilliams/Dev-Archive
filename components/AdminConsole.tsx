@@ -16,7 +16,13 @@ import {
   Terminal, 
   Sparkles, 
   Send, 
-  ExternalLink 
+  ExternalLink,
+  Inbox,
+  Calendar,
+  Phone,
+  MapPin,
+  MailCheck,
+  UserCheck
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { isSiteOwner, OWNER_EMAIL } from '../src/security';
@@ -64,7 +70,12 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
   const isOwner = isSiteOwner(currentUser?.email);
 
   // Active Admin Tab
-  const [activeTab, setActiveTab] = useState<'broadcast' | 'controls' | 'editorial' | 'security'>('broadcast');
+  const [activeTab, setActiveTab] = useState<'broadcast' | 'controls' | 'editorial' | 'security' | 'bookings'>('broadcast');
+
+  // Service Bookings State
+  const [bookingsList, setBookingsList] = useState<any[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState<boolean>(false);
+  const [bookingsError, setBookingsError] = useState<string | null>(null);
 
   // Server Telemetry State
   const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
@@ -128,9 +139,32 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
     }
   };
 
+  const fetchBookings = async () => {
+    if (!isOwner) return;
+    setLoadingBookings(true);
+    setBookingsError(null);
+    try {
+      const token = await getAuthToken();
+      if (!token) return;
+      const res = await fetch('/api/admin/bookings', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!res.ok) throw new Error('Failed to retrieve bookings.');
+      const data = await res.json();
+      setBookingsList(data.bookings || []);
+    } catch (err: any) {
+      setBookingsError(err?.message || 'Failed to fetch bookings list.');
+    } finally {
+      setLoadingBookings(false);
+    }
+  };
+
   useEffect(() => {
     if (isOwner) {
       fetchTelemetry();
+      fetchBookings();
     }
   }, [isOwner]);
 
@@ -433,6 +467,23 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
         >
           <Server className="w-3.5 h-3.5" />
           <span>Telemetry & Security Rules</span>
+        </button>
+
+        <button
+          onClick={() => { sciFiAudio.playClick(); setActiveTab('bookings'); fetchBookings(); }}
+          className={`px-4 py-2.5 text-xs font-mono font-bold uppercase transition-all border-b-2 cursor-pointer flex items-center gap-2 ${
+            activeTab === 'bookings'
+              ? 'border-brand-green text-brand-green bg-brand-green/5'
+              : 'border-transparent text-slate-400 hover:text-white'
+          }`}
+        >
+          <Inbox className="w-3.5 h-3.5" />
+          <span>In-Person Bookings</span>
+          {bookingsList.length > 0 && (
+            <span className="bg-brand-green/20 text-brand-green border border-brand-green/30 text-[10px] px-1.5 py-0.5 rounded-full">
+              {bookingsList.length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -843,6 +894,140 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
               </div>
             </div>
           </div>
+        </motion.div>
+      )}
+
+      {/* TAB 5: IN-PERSON CLASS & SERVICE BOOKINGS */}
+      {activeTab === 'bookings' && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-950 border border-slate-800 rounded-2xl p-6">
+            <div>
+              <h2 className="text-lg font-bold font-mono text-white flex items-center gap-2">
+                <Inbox className="w-5 h-5 text-brand-green" />
+                <span>In-Person Class & Advisory Bookings</span>
+              </h2>
+              <p className="text-xs text-slate-400 mt-1">
+                Real-time registry of in-person student, educator, and executive training bookings.
+              </p>
+            </div>
+            <button
+              onClick={() => { sciFiAudio.playClick(); fetchBookings(); }}
+              disabled={loadingBookings}
+              className="px-4 py-2 rounded-xl bg-brand-green/10 hover:bg-brand-green/20 border border-brand-green/30 text-brand-green text-xs font-mono font-bold flex items-center gap-2 cursor-pointer transition-colors"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingBookings ? 'animate-spin' : ''}`} />
+              <span>Refresh Bookings</span>
+            </button>
+          </div>
+
+          {bookingsError && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-xs font-mono text-red-400 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>{bookingsError}</span>
+            </div>
+          )}
+
+          {loadingBookings ? (
+            <div className="text-center py-16 text-slate-400 font-mono text-xs flex items-center justify-center gap-2">
+              <RefreshCw className="w-4 h-4 animate-spin text-brand-green" />
+              <span>Querying booking records...</span>
+            </div>
+          ) : bookingsList.length === 0 ? (
+            <div className="text-center py-16 bg-slate-950 border border-slate-800/80 rounded-2xl p-8 space-y-3">
+              <Inbox className="w-12 h-12 text-slate-600 mx-auto" />
+              <h3 className="text-base font-bold text-white font-mono">No Bookings Logged Yet</h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                When a student or organization submits a booking via the In-Person Classes flow, it will instantly appear here with full client contact details, selected date, and venue.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {bookingsList.map((booking, idx) => (
+                <div 
+                  key={booking.bookingId || idx}
+                  className="bg-slate-950 border border-slate-800 rounded-2xl p-5 hover:border-brand-green/30 transition-all space-y-4"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-900 pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-brand-green/10 border border-brand-green/30 flex items-center justify-center text-brand-green font-mono font-bold text-xs">
+                        {idx + 1}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white font-mono flex items-center gap-2">
+                          <span>{booking.service}</span>
+                          <span className="text-[10px] text-brand-green bg-brand-green/10 border border-brand-green/20 px-2 py-0.5 rounded-full">
+                            #{booking.bookingId}
+                          </span>
+                        </h4>
+                        <span className="text-[11px] text-slate-400 font-mono">
+                          Received: {booking.createdAt ? new Date(booking.createdAt).toLocaleString() : 'Recent'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 font-mono text-xs">
+                      {booking.emailDispatched ? (
+                        <span className="flex items-center gap-1 text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-lg">
+                          <MailCheck className="w-3.5 h-3.5" />
+                          <span>Email Dispatched</span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-lg">
+                          <span>Awaiting Direct Reply</span>
+                        </span>
+                      )}
+                      <a
+                        href={`mailto:${booking.clientEmail}?subject=Re: Your Development Archive Booking #${booking.bookingId}`}
+                        className="px-3 py-1 rounded-lg bg-brand-green text-brand-black font-bold hover:bg-brand-green-dark transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <Send className="w-3 h-3" />
+                        <span>Reply Client</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono">
+                    <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800/60">
+                      <span className="text-slate-500 block text-[10px] uppercase">Client Name</span>
+                      <span className="text-white font-bold">{booking.clientName}</span>
+                    </div>
+
+                    <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800/60">
+                      <span className="text-slate-500 block text-[10px] uppercase">Email & Phone</span>
+                      <a href={`mailto:${booking.clientEmail}`} className="text-emerald-400 hover:underline block truncate">
+                        {booking.clientEmail}
+                      </a>
+                      <span className="text-slate-400 text-[11px]">{booking.clientPhone || 'No Phone'}</span>
+                    </div>
+
+                    <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800/60">
+                      <span className="text-slate-500 block text-[10px] uppercase">Target Date & Cohort</span>
+                      <span className="text-amber-300 font-bold block truncate">{booking.preferredDate || 'Flexible'}</span>
+                      <span className="text-slate-400 text-[11px]">{booking.groupSize}</span>
+                    </div>
+
+                    <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800/60">
+                      <span className="text-slate-500 block text-[10px] uppercase">Verified Location</span>
+                      <span className="text-slate-200 block truncate" title={booking.location}>
+                        {booking.location || 'Studio'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {booking.notes && (
+                    <div className="bg-slate-900/40 p-3 rounded-xl border border-slate-800/40 text-xs">
+                      <span className="text-slate-500 font-mono text-[10px] uppercase block mb-1">Client Special Goals / Notes:</span>
+                      <p className="text-slate-300 italic">{booking.notes}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </motion.div>
       )}
     </div>

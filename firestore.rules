@@ -30,5 +30,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isOwner();
     }
+
+    // Service Bookings: any user/visitor can submit a booking request, owner can read/manage
+    match /service_bookings/{bookingId} {
+      allow create: if true;
+      allow read, update, delete: if isOwner();
+    }
   }
 }

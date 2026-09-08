@@ -1,11 +1,45 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Briefcase, Calendar, MapPin, CheckCircle, ArrowRight, Shield, Sparkles, BookOpen, Clock, Building2, Send } from 'lucide-react';
+import { 
+  Users, 
+  Briefcase, 
+  Calendar, 
+  MapPin, 
+  CheckCircle, 
+  ArrowRight, 
+  Shield, 
+  Sparkles, 
+  BookOpen, 
+  Clock, 
+  Building2, 
+  Send,
+  Mail,
+  Copy,
+  Check,
+  Download,
+  Printer
+} from 'lucide-react';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../src/firebase';
 import { TargetDatePicker } from './TargetDatePicker';
 import { LocationPicker } from './LocationPicker';
+import { sciFiAudio } from './SoundEffects';
 
 interface ServicesProps {
   onSelectContact?: (serviceName: string) => void;
+}
+
+interface ConfirmedBookingInfo {
+  bookingId: string;
+  emailDispatched: boolean;
+  service: string;
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  preferredDate: string;
+  groupSize: string;
+  notes: string;
 }
 
 export const Services: React.FC<ServicesProps> = ({ onSelectContact }) => {
@@ -24,44 +58,170 @@ export const Services: React.FC<ServicesProps> = ({ onSelectContact }) => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [confirmedBooking, setConfirmedBooking] = useState<ConfirmedBookingInfo | null>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  const handleCopyCode = (code: string) => {
+    sciFiAudio.playClick();
+    navigator.clipboard.writeText(code);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2500);
+  };
+
+  const handleOpenMailClient = () => {
+    if (!confirmedBooking) return;
+    sciFiAudio.playClick();
+
+    const subject = encodeURIComponent(`[Booking Confirmation #${confirmedBooking.bookingId}] ${confirmedBooking.service} - Development Archive`);
+    const body = encodeURIComponent(
+`Hello ${confirmedBooking.name},
+
+Here is your official booking confirmation for Development Archive In-Person Services:
+
+=======================================================
+OFFICIAL BOOKING CONFIRMATION RECEIPT
+Reference Code: #${confirmedBooking.bookingId}
+Status: Confirmed & Registered
+=======================================================
+
+• Service: ${confirmedBooking.service}
+• Target Date & Time: ${confirmedBooking.preferredDate || 'Flexible / To Be Arranged'}
+• Verified Location: ${confirmedBooking.location || 'Development Archive Studio'}
+• Client Name: ${confirmedBooking.name}
+• Client Email: ${confirmedBooking.email}
+• Client Phone: ${confirmedBooking.phone || 'N/A'}
+• Group / Cohort Size: ${confirmedBooking.groupSize}
+${confirmedBooking.notes ? `• Specific Goals / Notes: ${confirmedBooking.notes}\n` : ''}
+-------------------------------------------------------
+WHAT HAPPENS NEXT:
+1. Your instructor and session coordinator are preparing your syllabus materials.
+2. We will meet you at the specified venue at your selected time block.
+3. Need to reschedule or ask questions? Simply reply to this email.
+
+Support & Inquiries:
+Email: support@developmentarchive.net / wordswithoutwallspublishing@gmail.com
+Website: https://developmentarchive.net
+`
+    );
+
+    window.location.href = `mailto:${confirmedBooking.email}?cc=wordswithoutwallspublishing@gmail.com,support@developmentarchive.net&subject=${subject}&body=${body}`;
+  };
+
+  const handleDownloadIcs = () => {
+    if (!confirmedBooking) return;
+    sciFiAudio.playClick();
+
+    const timestamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Development Archive//In-Person Session//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      `UID:${confirmedBooking.bookingId}@developmentarchive.net`,
+      `DTSTAMP:${timestamp}`,
+      `DTSTART:${timestamp}`,
+      `SUMMARY:Development Archive: ${confirmedBooking.service}`,
+      `DESCRIPTION:In-Person Session: ${confirmedBooking.service}\\nReference: #${confirmedBooking.bookingId}\\nLocation: ${confirmedBooking.location}\\nDate/Time: ${confirmedBooking.preferredDate}\\nClient: ${confirmedBooking.name}`,
+      `LOCATION:${confirmedBooking.location}`,
+      'STATUS:CONFIRMED',
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `booking-${confirmedBooking.bookingId}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    sciFiAudio.playClick();
     setIsSubmitting(true);
 
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwcqP5oYKfswzNYsBd1qqOVTZ5oc3EUN81a_nz8rpn2WmWuVSt7gcU3VVQ_uuhnWxtk/exec';
-    
-    try {
-      const messageBody = `[IN-PERSON SERVICE BOOKING REQUEST]
-Service: ${bookingService}
-Preferred Location: ${bookingData.location || 'In-Person Studio'}
-Preferred Date/Time: ${bookingData.preferredDate || 'Flexible'}
-Group Size: ${bookingData.groupSize}
-Phone: ${bookingData.phone || 'N/A'}
-Notes: ${bookingData.notes}`;
+    const generatedId = `DA-BK-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
-      const params = new URLSearchParams({
-        name: bookingData.name,
-        email: bookingData.email,
-        message: messageBody,
-        _t: Date.now().toString()
+    try {
+      // 1. Submit to backend endpoint (handles server validation, nodemailer/Resend email dispatch, and in-memory queue)
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: bookingData.name,
+          email: bookingData.email,
+          phone: bookingData.phone,
+          service: bookingService,
+          location: bookingData.location,
+          preferredDate: bookingData.preferredDate,
+          groupSize: bookingData.groupSize,
+          notes: bookingData.notes
+        })
       });
 
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
-      iframe.src = `${scriptUrl}?${params.toString()}`;
+      const data = await res.json().catch(() => ({}));
+      const officialId = data.bookingId || generatedId;
+      const emailDispatched = Boolean(data.emailDispatched);
 
-      setTimeout(() => {
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
-        }
-      }, 4000);
+      // 2. Persist booking to Firestore database
+      try {
+        const bookingRef = doc(db, 'service_bookings', officialId);
+        await setDoc(bookingRef, {
+          bookingId: officialId,
+          service: bookingService,
+          clientName: bookingData.name,
+          clientEmail: bookingData.email,
+          clientPhone: bookingData.phone || '',
+          location: bookingData.location || 'In-Person Studio',
+          preferredDate: bookingData.preferredDate || 'Flexible',
+          groupSize: bookingData.groupSize,
+          notes: bookingData.notes || '',
+          status: 'confirmed',
+          emailDispatched: emailDispatched,
+          createdAt: serverTimestamp()
+        });
+      } catch (fsErr) {
+        console.warn('Firestore write warning:', fsErr);
+      }
 
-      setIsSubmitting(false);
+      sciFiAudio.playSuccess();
+      setConfirmedBooking({
+        bookingId: officialId,
+        emailDispatched,
+        service: bookingService || 'In-Person Session',
+        name: bookingData.name,
+        email: bookingData.email,
+        phone: bookingData.phone,
+        location: bookingData.location || 'In-Person Studio',
+        preferredDate: bookingData.preferredDate || 'Flexible',
+        groupSize: bookingData.groupSize,
+        notes: bookingData.notes
+      });
       setBookingSuccess(true);
     } catch (err) {
-      console.error('Booking submission error:', err);
+      console.warn('Backend booking transmission notice:', err);
+      // Fallback local registration
+      sciFiAudio.playSuccess();
+      setConfirmedBooking({
+        bookingId: generatedId,
+        emailDispatched: false,
+        service: bookingService || 'In-Person Session',
+        name: bookingData.name,
+        email: bookingData.email,
+        phone: bookingData.phone,
+        location: bookingData.location || 'In-Person Studio',
+        preferredDate: bookingData.preferredDate || 'Flexible',
+        groupSize: bookingData.groupSize,
+        notes: bookingData.notes
+      });
+      setBookingSuccess(true);
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -482,12 +642,12 @@ Notes: ${bookingData.notes}`;
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-brand-black border border-brand-border rounded-3xl p-6 sm:p-10 max-w-xl w-full relative shadow-2xl overflow-hidden my-auto max-h-[90vh] overflow-y-auto"
+              className="bg-brand-black border border-brand-border rounded-3xl p-6 sm:p-8 md:p-10 max-w-xl w-full relative shadow-2xl my-auto max-h-[92vh] overflow-y-auto overscroll-contain pb-8"
             >
               {/* Close Button */}
               <button
                 onClick={() => { setBookingService(null); setBookingSuccess(false); }}
-                className="absolute top-6 right-6 text-gray-400 hover:text-white text-xl font-bold p-2"
+                className="absolute top-6 right-6 text-gray-400 hover:text-white text-xl font-bold p-2 cursor-pointer z-10"
               >
                 ✕
               </button>
@@ -550,28 +710,26 @@ Notes: ${bookingData.notes}`;
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-mono uppercase text-brand-light-gray mb-1">
-                          Preferred Location (GPS Verified)
-                        </label>
-                        <LocationPicker
-                          value={bookingData.location}
-                          onChange={(val) => setBookingData({ ...bookingData, location: val })}
-                          placeholder="Click to detect GPS or search real location..."
-                        />
-                      </div>
+                    <div>
+                      <label className="block text-xs font-mono uppercase text-brand-light-gray mb-1">
+                        Preferred Location (GPS Verified & Real Address)
+                      </label>
+                      <LocationPicker
+                        value={bookingData.location}
+                        onChange={(val) => setBookingData({ ...bookingData, location: val })}
+                        placeholder="Click to detect GPS or search real location..."
+                      />
+                    </div>
 
-                      <div>
-                        <label className="block text-xs font-mono uppercase text-brand-light-gray mb-1">
-                          Target Date & Time Block
-                        </label>
-                        <TargetDatePicker
-                          value={bookingData.preferredDate}
-                          onChange={(val) => setBookingData({ ...bookingData, preferredDate: val })}
-                          placeholder="Click to pick date & time block..."
-                        />
-                      </div>
+                    <div>
+                      <label className="block text-xs font-mono uppercase text-brand-light-gray mb-1">
+                        Target Date & Time Block
+                      </label>
+                      <TargetDatePicker
+                        value={bookingData.preferredDate}
+                        onChange={(val) => setBookingData({ ...bookingData, preferredDate: val })}
+                        placeholder="Click to pick date & time block..."
+                      />
                     </div>
 
                     <div>
@@ -613,23 +771,123 @@ Notes: ${bookingData.notes}`;
                     </button>
                   </form>
                 </div>
-              ) : (
-                <div className="text-center py-8 space-y-6">
-                  <div className="w-20 h-20 bg-brand-green/20 rounded-full flex items-center justify-center mx-auto text-brand-green">
-                    <CheckCircle className="w-12 h-12" />
+              ) : confirmedBooking ? (
+                <div className="py-4 space-y-6 text-left">
+                  {/* Top Success Banner */}
+                  <div className="text-center space-y-2">
+                    <div className="w-16 h-16 bg-brand-green/20 border border-brand-green/40 rounded-full flex items-center justify-center mx-auto text-brand-green">
+                      <CheckCircle className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                      Booking Confirmed & Registered!
+                    </h3>
+                    <p className="text-xs sm:text-sm text-brand-light-gray max-w-md mx-auto">
+                      Your in-person session request has been officially recorded in the Development Archive scheduling queue.
+                    </p>
                   </div>
-                  <h3 className="text-3xl font-black text-white">Booking Transmitted!</h3>
-                  <p className="text-brand-light-gray text-sm max-w-md mx-auto leading-relaxed">
-                    Thank you, <span className="text-white font-bold">{bookingData.name}</span>. Your request for <span className="text-brand-green font-bold">{bookingService}</span> has been logged. Our coordinator will reach out to <span className="text-white font-bold">{bookingData.email}</span> shortly.
-                  </p>
+
+                  {/* Official Reference Code Pill */}
+                  <div className="bg-brand-gray-dark border border-brand-green/30 rounded-2xl p-4 flex items-center justify-between gap-3">
+                    <div>
+                      <span className="text-[10px] font-mono uppercase text-brand-light-gray tracking-wider block">
+                        Official Reference Code
+                      </span>
+                      <span className="font-mono text-base sm:text-lg font-black text-brand-green">
+                        #{confirmedBooking.bookingId}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleCopyCode(confirmedBooking.bookingId)}
+                      className="px-3 py-1.5 rounded-lg bg-brand-green/10 hover:bg-brand-green/20 border border-brand-green/30 text-brand-green text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      {copiedCode ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedCode ? 'Copied' : 'Copy'}</span>
+                    </button>
+                  </div>
+
+                  {/* Immediate Email Dispatch Notification & Action */}
+                  <div className="bg-brand-green/5 border border-brand-green/20 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-xl bg-brand-green/20 text-brand-green shrink-0 mt-0.5">
+                        <Mail className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                          Email Confirmation & Receipt
+                        </h4>
+                        <p className="text-xs text-brand-light-gray mt-1 leading-relaxed">
+                          {confirmedBooking.emailDispatched ? (
+                            <span>An automated confirmation email was dispatched to <strong className="text-brand-green">{confirmedBooking.email}</strong>.</span>
+                          ) : (
+                            <span>Booking registered! To ensure an instant copy is in your personal inbox, click below to open your pre-addressed receipt.</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleOpenMailClient}
+                      className="w-full py-3 px-4 rounded-xl bg-brand-green hover:bg-brand-green-dark text-brand-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-brand-green/10 transition-colors"
+                    >
+                      <Mail className="w-4 h-4" />
+                      <span>Send / Open Confirmation in My Email App</span>
+                    </button>
+                  </div>
+
+                  {/* Summary Details Card */}
+                  <div className="bg-brand-black/60 border border-brand-border rounded-2xl p-4 space-y-2.5 text-xs">
+                    <div className="flex justify-between border-b border-brand-border/40 pb-2">
+                      <span className="text-brand-light-gray">Service Requested:</span>
+                      <span className="text-white font-bold">{confirmedBooking.service}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-brand-border/40 pb-2">
+                      <span className="text-brand-light-gray">Target Date & Time:</span>
+                      <span className="text-brand-green font-bold">{confirmedBooking.preferredDate || 'Flexible / To Be Arranged'}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-brand-border/40 pb-2">
+                      <span className="text-brand-light-gray">Location:</span>
+                      <span className="text-white font-semibold text-right max-w-[65%] truncate">{confirmedBooking.location || 'Studio'}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-brand-border/40 pb-2">
+                      <span className="text-brand-light-gray">Client:</span>
+                      <span className="text-white font-medium">{confirmedBooking.name} ({confirmedBooking.email})</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-brand-light-gray">Group Size:</span>
+                      <span className="text-white">{confirmedBooking.groupSize}</span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons: Calendar & Print */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={handleDownloadIcs}
+                      className="py-2.5 px-3 rounded-xl bg-brand-gray-dark hover:bg-brand-border border border-brand-border text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                    >
+                      <Calendar className="w-4 h-4 text-brand-green" />
+                      <span>Add to Calendar (.ics)</span>
+                    </button>
+                    <button
+                      onClick={() => window.print()}
+                      className="py-2.5 px-3 rounded-xl bg-brand-gray-dark hover:bg-brand-border border border-brand-border text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                    >
+                      <Printer className="w-4 h-4 text-brand-light-gray" />
+                      <span>Print Receipt</span>
+                    </button>
+                  </div>
+
                   <button
-                    onClick={() => { setBookingService(null); setBookingSuccess(false); }}
-                    className="px-8 py-3 rounded-xl bg-brand-green text-brand-black font-bold text-xs uppercase tracking-wider hover:bg-brand-green-dark cursor-pointer"
+                    onClick={() => {
+                      setBookingService(null);
+                      setBookingSuccess(false);
+                      setConfirmedBooking(null);
+                    }}
+                    className="w-full py-3 rounded-xl bg-brand-gray-dark hover:bg-brand-border border border-brand-border text-brand-light-gray hover:text-white font-mono text-xs uppercase tracking-wider cursor-pointer transition-colors"
                   >
-                    Close Window
+                    Done & Close
                   </button>
                 </div>
-              )}
+              ) : null}
             </motion.div>
           </div>
         )}

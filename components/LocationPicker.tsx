@@ -49,6 +49,13 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll into view when opened to prevent vertical clipping on small viewports
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [isOpen]);
+
   // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -81,7 +88,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
           setSearchResults(data);
         }
       } catch (err) {
-        console.error('Location search error:', err);
+        console.warn('Location search error:', err);
       } finally {
         setIsSearching(false);
       }
@@ -90,6 +97,36 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // IP-based Location Fallback
+  const fallbackIpLocation = async () => {
+    try {
+      const res = await fetch('https://get.geojs.io/v1/ip/geo.json');
+      if (res.ok) {
+        const data = await res.json();
+        const city = data.city || '';
+        const region = data.region || '';
+        const country = data.country || '';
+        const lat = parseFloat(data.latitude) || 0;
+        const lng = parseFloat(data.longitude) || 0;
+
+        if (city || country) {
+          const locName = `${city ? city + ', ' : ''}${region ? region + ', ' : ''}${country}`.replace(/,\s*$/, '');
+          const formatted = `📍 Verified Location: ${locName}`;
+          setGpsCoords({ lat, lng });
+          setVerifiedAddress(locName);
+          sciFiAudio.playSuccess();
+          onChange(formatted);
+          setIsOpen(false);
+          setIsLocating(false);
+          return true;
+        }
+      }
+    } catch {
+      // Ignore network fallback error gracefully
+    }
+    return false;
+  };
+
   // GPS Location Detection Handler
   const handleDetectGps = () => {
     sciFiAudio.playClick();
@@ -97,8 +134,12 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
     setIsLocating(true);
 
     if (!navigator.geolocation) {
-      setGpsError('Geolocation is not supported by your browser.');
-      setIsLocating(false);
+      fallbackIpLocation().then((success) => {
+        if (!success) {
+          setGpsError('Geolocation unavailable. Please search by city or select a venue below.');
+          setIsLocating(false);
+        }
+      });
       return;
     }
 
@@ -140,8 +181,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
             onChange(fallbackStr);
             setIsOpen(false);
           }
-        } catch (err) {
-          console.error('Reverse geocode error:', err);
+        } catch {
           const fallbackStr = `📍 GPS Coordinates: ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°W`;
           sciFiAudio.playSuccess();
           onChange(fallbackStr);
@@ -150,18 +190,21 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
           setIsLocating(false);
         }
       },
-      (error) => {
-        console.error('GPS Geolocation Error:', error);
-        setIsLocating(false);
-        if (error.code === error.PERMISSION_DENIED) {
-          setGpsError('GPS Access Denied. Please allow location permissions in your browser.');
-        } else if (error.code === error.POSITION_UNAVAILABLE) {
-          setGpsError('Location information is unavailable. Please search by city or address.');
-        } else {
-          setGpsError('GPS Request timed out. Please try again or search below.');
+      async (error) => {
+        console.warn('Browser GPS not available, trying network location fallback:', error.message || error.code);
+        const fallbackSucceeded = await fallbackIpLocation();
+        if (!fallbackSucceeded) {
+          setIsLocating(false);
+          if (error.code === 1 /* PERMISSION_DENIED */) {
+            setGpsError('Location permission was denied. Please search your city or address below.');
+          } else if (error.code === 2 /* POSITION_UNAVAILABLE */) {
+            setGpsError('Location information is unavailable. Please search your city or address below.');
+          } else {
+            setGpsError('Location request timed out. Please search your city or address below.');
+          }
         }
       },
-      { timeout: 10000, enableHighAccuracy: true }
+      { timeout: 7000, enableHighAccuracy: false, maximumAge: 60000 }
     );
   };
 
@@ -229,7 +272,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-[10010] mt-2 left-0 right-0 sm:left-auto sm:right-0 w-full sm:w-[380px] bg-[#0d121d] border border-brand-border/90 rounded-2xl p-4 shadow-2xl backdrop-blur-xl text-white font-mono space-y-4"
+            className="absolute z-[10010] mt-2 left-0 right-0 w-full max-w-full bg-[#0d121d] border border-brand-border/90 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-xl text-white font-mono space-y-4 max-h-[min(480px,60vh)] overflow-y-auto overscroll-contain scrollbar-thin scrollbar-thumb-brand-green/30 scrollbar-track-transparent"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-brand-border/60 pb-3">

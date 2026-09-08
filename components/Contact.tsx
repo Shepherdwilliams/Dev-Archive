@@ -45,36 +45,26 @@ export const Contact: React.FC = () => {
         setError('');
         setIsLoading(true);
 
-        const scriptUrl = 'https://script.google.com/macros/s/AKfycbwcqP5oYKfswzNYsBd1qqOVTZ5oc3EUN81a_nz8rpn2WmWuVSt7gcU3VVQ_uuhnWxtk/exec';
-
         try {
-            const params = new URLSearchParams({
-                name: formData.name,
-                email: formData.email,
-                message: formData.message,
-                recipient: SUPPORT_EMAIL,
-                target: SUPPORT_EMAIL,
-                _t: Date.now().toString()
+            const res = await fetch('/api/contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: formData.name,
+                    email: formData.email,
+                    message: formData.message
+                })
             });
 
-            const finalUrl = `${scriptUrl}?${params.toString()}`;
-
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.name = 'hidden_submit_iframe';
-            document.body.appendChild(iframe);
-            iframe.src = finalUrl;
-
-            setTimeout(() => {
-                if (document.body.contains(iframe)) {
-                    document.body.removeChild(iframe);
-                }
-            }, 5000);
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || 'Server transmission failed');
+            }
 
             setIsLoading(false);
             setIsSubmitted(true);
         } catch (err) {
-            console.error('Submission error:', err);
+            console.warn('Backend contact submission error, using direct client dispatch:', err);
             // If background transmission fails, open direct mailto to ensure delivery
             handleDirectMailto();
             setIsLoading(false);

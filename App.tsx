@@ -231,7 +231,7 @@ const App: React.FC = () => {
           {(() => {
             switch (view) {
               case 'news':
-                return <StemNews />;
+                return <StemNews currentUser={currentUser} />;
               case 'modules':
                 return <CourseModules onSelectLesson={handleSelectLesson} completedLessons={completedLessons} />;
               case 'agents':

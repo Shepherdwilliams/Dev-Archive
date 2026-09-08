@@ -511,6 +511,289 @@ NON-NEGOTIABLE SOURCING RULES:
     }
   });
 
+  // ==========================================
+  // In-Person Services Booking & Email Dispatch
+  // ==========================================
+  interface ServiceBooking {
+    bookingId: string;
+    service: string;
+    clientName: string;
+    clientEmail: string;
+    clientPhone: string;
+    location: string;
+    preferredDate: string;
+    groupSize: string;
+    notes: string;
+    status: string;
+    createdAt: string;
+    emailDispatched: boolean;
+    dispatchMethod?: string;
+  }
+
+  const recentBookings: ServiceBooking[] = [];
+
+  app.post("/api/bookings", async (req, res) => {
+    const { name, email, phone, service, location, preferredDate, groupSize, notes } = req.body;
+
+    if (!name || !email || !service) {
+      return res.status(400).json({ error: "Name, email, and service are required to book." });
+    }
+
+    // Basic email format validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: "Please provide a valid email address." });
+    }
+
+    const bookingId = `DA-BK-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const createdAt = new Date().toISOString();
+
+    let emailDispatched = false;
+    let dispatchMethod = "none";
+    let dispatchError = "";
+
+    const confirmationSubject = `[Booking Confirmed #${bookingId}] ${service} - Development Archive`;
+    const confirmationHtml = `
+      <div style="font-family: Arial, sans-serif; background-color: #0b0f17; color: #ffffff; padding: 24px; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #1f293d;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h1 style="color: #00ff88; margin: 0; font-size: 24px; letter-spacing: 1px;">DEVELOPMENT ARCHIVE</h1>
+          <p style="color: #94a3b8; font-size: 14px; margin-top: 4px;">In-Person Professional Training & Scientific Advisory</p>
+        </div>
+        
+        <div style="background-color: #131a29; border-radius: 8px; padding: 20px; border-left: 4px solid #00ff88; margin-bottom: 20px;">
+          <h2 style="margin-top: 0; font-size: 18px; color: #ffffff;">Booking Confirmation Receipt</h2>
+          <p style="margin: 4px 0; color: #94a3b8;">Reference Code: <strong style="color: #00ff88;">#${bookingId}</strong></p>
+          <p style="margin: 4px 0; color: #94a3b8;">Status: <span style="color: #38bdf8; font-weight: bold;">Confirmed & Registered</span></p>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; color: #e2e8f0; font-size: 14px;">
+          <tr>
+            <td style="padding: 8px 0; color: #94a3b8; width: 35%;">Requested Service:</td>
+            <td style="padding: 8px 0; font-weight: bold; color: #ffffff;">${service}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #94a3b8;">Target Date / Time:</td>
+            <td style="padding: 8px 0; font-weight: bold; color: #00ff88;">${preferredDate || 'Flexible / To Be Arranged'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #94a3b8;">Verified Location:</td>
+            <td style="padding: 8px 0; font-weight: bold; color: #ffffff;">${location || 'Development Archive Studio'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #94a3b8;">Client Name:</td>
+            <td style="padding: 8px 0; color: #ffffff;">${name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #94a3b8;">Contact Email:</td>
+            <td style="padding: 8px 0; color: #ffffff;">${email}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #94a3b8;">Contact Phone:</td>
+            <td style="padding: 8px 0; color: #ffffff;">${phone || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #94a3b8;">Group Size:</td>
+            <td style="padding: 8px 0; color: #ffffff;">${groupSize || '1-5 participants'}</td>
+          </tr>
+          ${notes ? `<tr><td style="padding: 8px 0; color: #94a3b8;">Notes:</td><td style="padding: 8px 0; color: #cbd5e1;">${notes}</td></tr>` : ''}
+        </table>
+
+        <div style="background-color: #0d131f; border-radius: 8px; padding: 16px; font-size: 12px; color: #94a3b8; margin-bottom: 20px;">
+          <p style="margin: 0 0 8px 0;"><strong style="color: #ffffff;">What happens next?</strong></p>
+          <p style="margin: 0 0 4px 0;">1. Your session lead is reviewing your target date and curriculum focus.</p>
+          <p style="margin: 0 0 4px 0;">2. You will receive direct calendar invites and syllabus notes prior to the session.</p>
+          <p style="margin: 0;">3. Need to reschedule or ask questions? Reply directly to this email or contact <a href="mailto:${OWNER_EMAIL}" style="color: #00ff88;">${OWNER_EMAIL}</a>.</p>
+        </div>
+
+        <div style="text-align: center; border-top: 1px solid #1f293d; padding-top: 16px; font-size: 11px; color: #64748b;">
+          Development Archive • developmentarchive.net • Dedicated Science & STEM Pedagogical Platform
+        </div>
+      </div>
+    `;
+
+    // 1. Try Resend if configured
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            from: process.env.RESEND_FROM || "Development Archive <onboarding@resend.dev>",
+            to: [email, OWNER_EMAIL],
+            subject: confirmationSubject,
+            html: confirmationHtml
+          })
+        });
+        if (resendRes.ok) {
+          emailDispatched = true;
+          dispatchMethod = "resend";
+        } else {
+          const resendErr = await resendRes.text();
+          console.warn("Resend email dispatch warning:", resendErr);
+          dispatchError = resendErr;
+        }
+      } catch (err: any) {
+        console.warn("Resend email exception:", err?.message || err);
+        dispatchError = err?.message || "Resend failed";
+      }
+    }
+
+    // 2. Try Nodemailer / SMTP if not yet dispatched
+    if (!emailDispatched && (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD)) {
+      try {
+        const nodemailer = await import("nodemailer");
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST || "smtp.gmail.com",
+          port: parseInt(process.env.SMTP_PORT || "465"),
+          secure: (process.env.SMTP_PORT || "465") === "465",
+          auth: {
+            user: process.env.SMTP_USER || process.env.GMAIL_USER || OWNER_EMAIL,
+            pass: process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD
+          }
+        });
+
+        await transporter.sendMail({
+          from: `"Development Archive Bookings" <${process.env.SMTP_USER || OWNER_EMAIL}>`,
+          to: email,
+          cc: OWNER_EMAIL,
+          replyTo: OWNER_EMAIL,
+          subject: confirmationSubject,
+          html: confirmationHtml
+        });
+
+        emailDispatched = true;
+        dispatchMethod = "smtp";
+      } catch (smtpErr: any) {
+        console.warn("SMTP email dispatch warning:", smtpErr?.message || smtpErr);
+        dispatchError = smtpErr?.message || "SMTP failed";
+      }
+    }
+
+    const newBooking: ServiceBooking = {
+      bookingId,
+      service,
+      clientName: name,
+      clientEmail: email,
+      clientPhone: phone || "",
+      location: location || "In-Person Studio",
+      preferredDate: preferredDate || "Flexible",
+      groupSize: groupSize || "1-5 participants",
+      notes: notes || "",
+      status: "confirmed",
+      createdAt,
+      emailDispatched,
+      dispatchMethod
+    };
+
+    // Store in memory ring buffer
+    recentBookings.unshift(newBooking);
+    if (recentBookings.length > 100) {
+      recentBookings.pop();
+    }
+
+    res.json({
+      success: true,
+      bookingId,
+      emailDispatched,
+      dispatchMethod,
+      dispatchError: dispatchError || undefined,
+      message: emailDispatched
+        ? `Booking confirmed! Confirmation email dispatched to ${email}.`
+        : `Booking recorded under reference #${bookingId}.`,
+      booking: newBooking
+    });
+  });
+
+  // Admin endpoint: List recent service bookings
+  app.get("/api/admin/bookings", authenticateOwner, (req, res) => {
+    res.json({
+      total: recentBookings.length,
+      bookings: recentBookings
+    });
+  });
+
+  // Contact form submission & email notification endpoint
+  app.post("/api/contact", async (req, res) => {
+    const { name, email, message } = req.body;
+
+    if (!name || !email || !message) {
+      return res.status(400).json({ error: "Name, email, and message are required." });
+    }
+
+    const contactId = `DA-MSG-${Date.now().toString(36).toUpperCase()}`;
+    const subject = `[Inquiry #${contactId}] Development Archive Message from ${name}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; background-color: #0b0f17; color: #ffffff; padding: 24px; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #1f293d;">
+        <h2 style="color: #00ff88; margin-top: 0;">New Message from Development Archive Contact Form</h2>
+        <p><strong>From:</strong> ${name} &lt;${email}&gt;</p>
+        <p><strong>Reference ID:</strong> #${contactId}</p>
+        <div style="background-color: #131a29; border-radius: 8px; padding: 16px; margin: 16px 0; border-left: 3px solid #00ff88; color: #e2e8f0; white-space: pre-wrap;">
+          ${message}
+        </div>
+        <p style="font-size: 12px; color: #94a3b8;">Sent via Development Archive (developmentarchive.net)</p>
+      </div>
+    `;
+
+    let emailDispatched = false;
+
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            from: process.env.RESEND_FROM || "Development Archive <onboarding@resend.dev>",
+            to: [OWNER_EMAIL],
+            reply_to: email,
+            subject,
+            html
+          })
+        });
+        if (resendRes.ok) emailDispatched = true;
+      } catch (err) {
+        console.warn("Resend contact dispatch warning:", err);
+      }
+    }
+
+    if (!emailDispatched && (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD)) {
+      try {
+        const nodemailer = await import("nodemailer");
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST || "smtp.gmail.com",
+          port: parseInt(process.env.SMTP_PORT || "465"),
+          secure: (process.env.SMTP_PORT || "465") === "465",
+          auth: {
+            user: process.env.SMTP_USER || process.env.GMAIL_USER || OWNER_EMAIL,
+            pass: process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD
+          }
+        });
+
+        await transporter.sendMail({
+          from: `"Development Archive Contact" <${process.env.SMTP_USER || OWNER_EMAIL}>`,
+          to: OWNER_EMAIL,
+          replyTo: email,
+          subject,
+          html
+        });
+        emailDispatched = true;
+      } catch (err) {
+        console.warn("SMTP contact dispatch warning:", err);
+      }
+    }
+
+    res.json({
+      success: true,
+      contactId,
+      emailDispatched,
+      message: "Message received successfully."
+    });
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const { createServer } = await import("vite");

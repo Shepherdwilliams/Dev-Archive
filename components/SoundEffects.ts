@@ -95,6 +95,51 @@ class SciFiAudio {
       // ignore
     }
   }
+
+  // Launch engine rumble
+  public playLaunchRumble() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(70, now);
+      osc.frequency.linearRampToValueAtTime(130, now + 1.5);
+      gain.gain.setValueAtTime(0.07, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 1.5);
+    } catch {
+      // ignore
+    }
+  }
+
+  // Mission failure / abort buzzer
+  public playFailure() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.setValueAtTime(240, now + 0.15);
+      osc.frequency.setValueAtTime(160, now + 0.3);
+      gain.gain.setValueAtTime(0.09, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.5);
+    } catch {
+      // ignore
+    }
+  }
 }
 
 export const sciFiAudio = new SciFiAudio();
