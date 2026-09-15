@@ -18,6 +18,7 @@ import { Footer } from './components/Footer';
 import { VideoIntro } from './components/VideoIntro';
 import { ScrollToTop } from './components/ScrollToTop';
 import { StarfieldCanvas } from './components/StarfieldCanvas';
+import { HomeBackground } from './components/HomeBackground';
 import { AuthModal } from './components/AuthModal';
 import { ResumeBanner } from './components/ResumeBanner';
 import type { Lesson, UserProfile, UserProgressState } from './types';
@@ -274,9 +275,13 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="relative bg-black min-h-screen overflow-hidden">
-      {/* Retro Starfield Particle Canvas */}
-      <StarfieldCanvas enabled={starfieldEnabled} />
+    <div className="relative bg-[#0B0D0E] min-h-screen overflow-hidden">
+      {/* Sci-Fi Quantum & Neural Synapse Background for Home View */}
+      {view === 'home' ? (
+        <HomeBackground showControls={true} />
+      ) : (
+        <StarfieldCanvas enabled={starfieldEnabled} />
+      )}
 
       {showIntro && <VideoIntro onComplete={handleFinishIntro} />}
       
@@ -290,7 +295,7 @@ const App: React.FC = () => {
 
       {/* Main site content wrapper - hidden on first frame while intro plays to avoid flash of content */}
       <div 
-        className={`min-h-screen flex flex-col font-sans relative overflow-hidden bg-brand-black transition-opacity duration-700 ease-out ${
+        className={`min-h-screen flex flex-col font-sans relative overflow-hidden bg-transparent transition-opacity duration-700 ease-out ${
           showIntro ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'
         }`}
       >
