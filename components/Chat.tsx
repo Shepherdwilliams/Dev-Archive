@@ -69,12 +69,15 @@ export const Chat: React.FC = () => {
             const data = await response.json();
             setMessages(prev => [...prev, { role: 'model', text: data.text }]);
 
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            const isHighDemand = err?.message?.includes("high demand") || err?.message?.includes("peak demand") || err?.message?.includes("503");
             
-            // Fallback for simulation mode if API fails or is not configured
+            // Fallback for simulation mode if API fails or is temporarily busy
             setTimeout(() => {
-                let response = "SIMULATION MODE (Local Fallback): ";
+                let response = isHighDemand
+                    ? "⚠️ **AI Service Notice:** The model is currently handling high global traffic. Displaying simulated pedagogical fallback below while demand normalizes (you can re-prompt in a moment):\n\n"
+                    : "SIMULATION MODE (Local Fallback): ";
                 const q = currentInput.toLowerCase();
                 
                 if (q.includes("hi") || q.includes("hello")) {

@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
 
@@ -13,6 +14,84 @@ try {
   __dirname = path.dirname(__filename);
 } catch (e) {
   // Fallback for CommonJS
+}
+
+// Lazy-initialized Gemini client instance
+let aiClient: GoogleGenAI | null = null;
+function getAiClient(): GoogleGenAI {
+  if (!aiClient) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY environment variable is required");
+    }
+    aiClient = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
+  }
+  return aiClient;
+}
+
+// Resilient multi-tier model cascade to handle peak demand (503/429) gracefully
+const TEXT_MODELS_CASCADE = [
+  "gemini-3.8-flash",      // Primary modern recommended model
+  "gemini-3.1-flash-lite", // Fast, lightweight backup tier
+  "gemini-flash-latest"    // Standard flash latest fallback
+];
+
+interface GenerateOptions {
+  contents: any;
+  config?: any;
+}
+
+async function generateWithFallback(
+  ai: GoogleGenAI,
+  options: GenerateOptions
+): Promise<any> {
+  let lastError: any = null;
+
+  for (const model of TEXT_MODELS_CASCADE) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: options.contents,
+          config: options.config
+        });
+        if (response && response.text !== undefined) {
+          return response;
+        }
+      } catch (err: any) {
+        lastError = err;
+        const msg = err?.message || String(err);
+        const status = err?.status || err?.code || (err?.response ? err.response.status : null);
+        const isTransient = 
+          status === 503 ||
+          status === 429 ||
+          msg.includes("503") ||
+          msg.includes("429") ||
+          msg.includes("high demand") ||
+          msg.includes("UNAVAILABLE") ||
+          msg.includes("RESOURCE_EXHAUSTED");
+
+        console.warn(`[Gemini Engine] Model '${model}' (attempt ${attempt + 1}/2) failed: ${msg}`);
+
+        if (isTransient && attempt === 0) {
+          // Pause with jitter to let momentary spikes subside
+          await new Promise(res => setTimeout(res, 750));
+          continue;
+        }
+        // If second attempt failed or non-transient, cascade to the next model
+        break;
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 async function startServer() {
@@ -278,15 +357,7 @@ async function startServer() {
     }
 
     try {
-      const { GoogleGenAI } = await import("@google/genai");
-      const ai = new GoogleGenAI({
-        apiKey: apiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          }
-        }
-      });
+      const ai = getAiClient();
 
       // 2. Validate and sanitize conversation history array
       const sanitizedHistory: Array<{ role: string; parts: Array<{ text: string }> }> = [];
@@ -315,8 +386,7 @@ async function startServer() {
         ? systemInstruction
         : "You are a helpful AI science assistant.";
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+      const response = await generateWithFallback(ai, {
         contents: sanitizedHistory,
         config: {
           systemInstruction: safeSystemInstruction,
@@ -326,8 +396,17 @@ async function startServer() {
       res.json({ text: response.text });
     } catch (error: any) {
       console.error("AI Proxy Error:", error?.message || error);
-      // Sanitize internal error details before sending response to client
-      res.status(500).json({ error: "An error occurred while processing your AI request." });
+      const isDemandError = 
+        error?.message?.includes("high demand") || 
+        error?.message?.includes("503") || 
+        error?.message?.includes("UNAVAILABLE") || 
+        error?.code === 503 ||
+        error?.status === 503;
+      res.status(isDemandError ? 503 : 500).json({ 
+        error: isDemandError
+          ? "The AI service is currently experiencing high demand. Please try again in a few moments."
+          : "An error occurred while processing your AI request." 
+      });
     }
   });
 
@@ -341,15 +420,7 @@ async function startServer() {
     }
 
     try {
-      const { GoogleGenAI } = await import("@google/genai");
-      const ai = new GoogleGenAI({
-        apiKey: apiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          }
-        }
-      });
+      const ai = getAiClient();
 
       const systemPrompt = `You are a science and technology content bot that writes daily articles covering STEM fields, with a dedicated focus on artificial intelligence developments within each field.
 
@@ -396,8 +467,7 @@ Output format: Return ONLY pure JSON (no markdown fences around the json block) 
         ? `Produce today's verified daily STEM+AI news article focusing on: ${topicFocus}. Remember all non-negotiable sourcing and citation rules.`
         : `Produce today's verified daily STEM+AI news article for ${discipline || 'today\'s top global scientific breakthrough'}. Follow all non-negotiable sourcing rules and cite accredited sources.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+      const response = await generateWithFallback(ai, {
         contents: [{ role: "user", parts: [{ text: userPrompt }] }],
         config: {
           systemInstruction: systemPrompt,
@@ -412,7 +482,17 @@ Output format: Return ONLY pure JSON (no markdown fences around the json block) 
       res.json({ article: parsed });
     } catch (error: any) {
       console.error("News Generation Error:", error?.message || error);
-      res.status(500).json({ error: "Failed to generate verified STEM news dispatch." });
+      const isDemandError = 
+        error?.message?.includes("high demand") || 
+        error?.message?.includes("503") || 
+        error?.message?.includes("UNAVAILABLE") || 
+        error?.code === 503 ||
+        error?.status === 503;
+      res.status(isDemandError ? 503 : 500).json({ 
+        error: isDemandError
+          ? "The AI editorial service is currently experiencing peak demand. Please try again shortly."
+          : "Failed to generate verified STEM news dispatch." 
+      });
     }
   });
 
@@ -430,15 +510,7 @@ Output format: Return ONLY pure JSON (no markdown fences around the json block) 
     }
 
     try {
-      const { GoogleGenAI } = await import("@google/genai");
-      const ai = new GoogleGenAI({
-        apiKey: apiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          }
-        }
-      });
+      const ai = getAiClient();
 
       const translationPrompt = `You are a professional scientific translator specializing in STEM and Artificial Intelligence journalism.
 Translate the following scientific content into ${targetLanguage}.
@@ -449,8 +521,7 @@ Requirements:
 4. PRESERVE all Markdown headings, lists, quotes, and citations.
 5. Return ONLY the translated text, nothing else.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+      const response = await generateWithFallback(ai, {
         contents: [{ role: "user", parts: [{ text: `Content to translate (${context || 'article'}):\n\n${text}` }] }],
         config: {
           systemInstruction: translationPrompt,
@@ -460,7 +531,17 @@ Requirements:
       res.json({ translatedText: response.text });
     } catch (error: any) {
       console.error("Translation Error:", error?.message || error);
-      res.status(500).json({ error: "Failed to translate article." });
+      const isDemandError = 
+        error?.message?.includes("high demand") || 
+        error?.message?.includes("503") || 
+        error?.message?.includes("UNAVAILABLE") || 
+        error?.code === 503 ||
+        error?.status === 503;
+      res.status(isDemandError ? 503 : 500).json({ 
+        error: isDemandError
+          ? "Translation service is temporarily experiencing high demand. Please try again shortly."
+          : "Failed to translate article." 
+      });
     }
   });
 
@@ -474,15 +555,7 @@ Requirements:
     }
 
     try {
-      const { GoogleGenAI } = await import("@google/genai");
-      const ai = new GoogleGenAI({
-        apiKey: apiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          }
-        }
-      });
+      const ai = getAiClient();
 
       const verifySystemPrompt = `You are the accredited Verification & Fact-Checking Assistant for the Development Archive STEM News Bot.
 Your mission is to answer user questions about science, technology, and AI claims strictly based on real, accredited sources.
@@ -496,8 +569,7 @@ NON-NEGOTIABLE SOURCING RULES:
 
       const prompt = `Article Context:\n${articleContext ? articleContext.substring(0, 3000) : 'General STEM Inquiry'}\n\nUser Question/Verification Request:\n${query}`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+      const response = await generateWithFallback(ai, {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         config: {
           systemInstruction: verifySystemPrompt,
@@ -507,7 +579,17 @@ NON-NEGOTIABLE SOURCING RULES:
       res.json({ answer: response.text });
     } catch (error: any) {
       console.error("Verification Error:", error?.message || error);
-      res.status(500).json({ error: "Failed to verify claim." });
+      const isDemandError = 
+        error?.message?.includes("high demand") || 
+        error?.message?.includes("503") || 
+        error?.message?.includes("UNAVAILABLE") || 
+        error?.code === 503 ||
+        error?.status === 503;
+      res.status(isDemandError ? 503 : 500).json({ 
+        error: isDemandError
+          ? "Fact-checking verification service is currently experiencing high demand. Please try again shortly."
+          : "Failed to verify claim." 
+      });
     }
   });
 

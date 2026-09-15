@@ -89,12 +89,15 @@ export const ScienceLab: React.FC = () => {
       const data = await response.json();
       setMessages(prev => [...prev, { role: 'model', text: data.text }]);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      const isHighDemand = err?.message?.includes("high demand") || err?.message?.includes("peak demand") || err?.message?.includes("503");
       
       // Fallback simulation mode
       setTimeout(() => {
-        let response = "SIMULATION MODE ACTIVE (Local Fallback): ";
+        let response = isHighDemand
+          ? "⚠️ **AI Service Notice:** The model service is handling peak global demand. Reverting to local pedagogical synthesis:\n\n"
+          : "SIMULATION MODE ACTIVE (Local Fallback): ";
         const q = queryText.toLowerCase();
         
         if (q.includes("h") || q.includes("hydrogen")) {
