@@ -383,8 +383,14 @@ export const PeriodicTableQuiz: React.FC = () => {
               <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 shrink-0 mt-0.5">
                 <Brain className="w-5 h-5" />
               </div>
-              <div className="text-sm sm:text-base font-bold text-white leading-relaxed">
-                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+              <div className="text-sm sm:text-base font-bold text-white leading-relaxed flex-1">
+                <ReactMarkdown 
+                  remarkPlugins={[remarkMath]} 
+                  rehypePlugins={[rehypeKatex]}
+                  components={{
+                    p: ({ children }) => <span className="inline">{children}</span>
+                  }}
+                >
                   {currentQ.question}
                 </ReactMarkdown>
               </div>
@@ -417,16 +423,22 @@ export const PeriodicTableQuiz: React.FC = () => {
                     disabled={isSubmitted}
                     className={`w-full text-left p-4 rounded-xl border text-xs sm:text-sm transition-all flex items-center justify-between cursor-pointer ${optionStyles}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold border ${
+                    <div className="flex items-center gap-3 flex-1 mr-2">
+                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold border shrink-0 ${
                         isSelected
                           ? 'bg-emerald-400 text-black border-emerald-400'
                           : 'bg-slate-800 text-slate-400 border-slate-700'
                       }`}>
                         {String.fromCharCode(65 + idx)}
                       </span>
-                      <span>
-                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                      <span className="flex-1">
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkMath]} 
+                          rehypePlugins={[rehypeKatex]}
+                          components={{
+                            p: ({ children }) => <span className="inline">{children}</span>
+                          }}
+                        >
                           {optionText}
                         </ReactMarkdown>
                       </span>
@@ -473,21 +485,37 @@ export const PeriodicTableQuiz: React.FC = () => {
                   </div>
 
                   <div className="text-xs space-y-2 text-slate-300">
-                    <p className="leading-relaxed">
+                    <div className="leading-relaxed">
                       <strong className="text-white">Explanation: </strong>
-                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {currentQ.explanation}
-                      </ReactMarkdown>
-                    </p>
+                      <span className="text-slate-300 inline">
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkMath]} 
+                          rehypePlugins={[rehypeKatex]}
+                          components={{
+                            p: ({ children }) => <span className="inline">{children}</span>
+                          }}
+                        >
+                          {currentQ.explanation}
+                        </ReactMarkdown>
+                      </span>
+                    </div>
 
                     {currentQ.stseContext && (
                       <div className="pt-2 border-t border-slate-800 text-[11px] text-cyan-300 flex items-start gap-2">
                         <Sparkles className="w-4 h-4 shrink-0 mt-0.5 text-cyan-400" />
-                        <div>
+                        <div className="flex-1">
                           <strong className="text-cyan-400 uppercase">STSE Context: </strong>
-                          <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                            {currentQ.stseContext}
-                          </ReactMarkdown>
+                          <span className="text-cyan-200 inline">
+                            <ReactMarkdown 
+                              remarkPlugins={[remarkMath]} 
+                              rehypePlugins={[rehypeKatex]}
+                              components={{
+                                p: ({ children }) => <span className="inline">{children}</span>
+                              }}
+                            >
+                              {currentQ.stseContext}
+                            </ReactMarkdown>
+                          </span>
                         </div>
                       </div>
                     )}
